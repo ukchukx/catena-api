@@ -3,3 +3,4 @@ start/
 config/
 database/migrations/
 server.js
+vowfile.js
