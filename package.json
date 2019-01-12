@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node ace test",
-    "lint": "eslint --ext .js app config database start"
+    "lint": "eslint --ext .js ."
   },
   "keywords": [
     "adonisjs",

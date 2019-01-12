@@ -1,1 +1,5 @@
 public/
+start/
+config/
+database/migrations/
+server.js
