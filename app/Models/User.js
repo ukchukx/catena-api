@@ -3,7 +3,9 @@ const Model = use('Model');
 
 /** @type {import('@adonisjs/framework/src/Hash')} */
 const Hash = use('Hash');
+const Database = use('Database');
 
+/* eslint-disable class-methods-use-this */
 class User extends Model {
   static boot() {
     super.boot();
@@ -19,18 +21,12 @@ class User extends Model {
     });
   }
 
-  /**
-   * A relationship on tokens is required for auth to
-   * work. Since features like `refreshTokens` or
-   * `rememberToken` will be saved inside the
-   * tokens table.
-   *
-   * @method tokens
-   *
-   * @return {Object}
-   */
-  tokens() {
-    return this.hasMany('App/Models/Token');
+  async verifyPassword(password) {
+    return Hash.verify(password, this.password);
+  }
+
+  static baseQuery() {
+    return Database.from('users');
   }
 }
 
