@@ -1,4 +1,4 @@
-const { test, trait } = use('Test/Suite')('User registration/authentication');
+const { test, trait } = use('Test/Suite')('User');
 const User = use('App/Models/User');
 
 trait('DatabaseTransactions');
