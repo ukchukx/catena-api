@@ -1,6 +1,6 @@
-const User = use('App/Models/User');
 const { validate, sanitize } = use('Validator');
 const Hash = use('Hash');
+const User = use('App/Models/User');
 
 class UserController {
   async me({ auth, response }) {
@@ -48,8 +48,9 @@ class UserController {
       // get currently authenticated user
       const { current: { user } } = auth;
 
-      user.username = request.input('username');
-      user.email = request.input('email');
+      // Update user fields with provided values
+      user.username = userData.username;
+      user.email = userData.email;
 
       await user.save();
 
