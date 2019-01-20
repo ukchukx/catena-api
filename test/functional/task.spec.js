@@ -154,11 +154,9 @@ test('user can list tasks', async ({ client }) => {
   const task = await Task.create({ name, description: '', user_id: user.id });
 
   const date1 = new Date();
-  date1.setMilliseconds(0);
-  date1.setSeconds(0);
+  date1.setHours(12, 0, 0, 0);
   const date2 = new Date();
-  date2.setMilliseconds(0);
-  date2.setSeconds(0);
+  date2.setHours(12, 0, 0, 0);
 
   const schedules = [
     { due_date: date1.toISOString(), remarks: 'test schedule #1', task_id: task.id, user_id: user.id },
@@ -215,4 +213,131 @@ test('task deletion is soft', async ({ assert }) => {
 
   assert.isNull(await Task.find(task.id));
   assert.equal(1, count);
+});
+
+test('user can mark tasks as done on the due date', async ({ client }) => {
+  const email = 'test@test.com';
+  const password = 'password';
+  const name = 'Task #1';
+
+  const user = await User.create({ email, password });
+  const task = await Task.create({ name, description: '', user_id: user.id });
+
+  const date1 = new Date();
+  date1.setHours(12, 0, 0, 0);
+
+  const schedules = [
+    { due_date: date1.toISOString(), remarks: 'test schedule #2', task_id: task.id, user_id: user.id }
+  ];
+  await TaskSchedule.createMany(schedules);
+
+  const response = await client
+    .post(`api/v1/tasks/${task.id}/done`)
+    .loginVia(user, 'jwt')
+    .end();
+
+  response.assertStatus(200);
+  response.assertJSONSubset({
+    success: true,
+    data: {
+      name,
+      description: task.description,
+      user_id: user.id,
+      schedules: [
+        Object.assign(schedules[0], { done: 1 })
+      ]
+    }
+  });
+});
+
+test('user cannot mark tasks as done before the due date', async ({ client }) => {
+  const email = 'test@test.com';
+  const password = 'password';
+  const name = 'Task #1';
+
+  const user = await User.create({ email, password });
+  const task = await Task.create({ name, description: '', user_id: user.id });
+
+  const date1 = new Date();
+  date1.setDate(date1.getDate() + 1);
+  date1.setHours(12, 0, 0, 0);
+
+  const schedules = [
+    { due_date: date1.toISOString(), remarks: 'test schedule #2', task_id: task.id, user_id: user.id }
+  ];
+  await TaskSchedule.createMany(schedules);
+
+  const response = await client
+    .post(`api/v1/tasks/${task.id}/done`)
+    .loginVia(user, 'jwt')
+    .end();
+
+  response.assertStatus(403);
+  response.assertJSONSubset({
+    success: false
+  });
+});
+
+test('user cannot mark tasks as done after the due date', async ({ client }) => {
+  const email = 'test@test.com';
+  const password = 'password';
+  const name = 'Task #1';
+
+  const user = await User.create({ email, password });
+  const task = await Task.create({ name, description: '', user_id: user.id });
+
+  const date1 = new Date();
+  date1.setDate(date1.getDate() - 1);
+  date1.setHours(12, 0, 0, 0);
+
+  const schedules = [
+    { due_date: date1.toISOString(), remarks: 'test schedule #2', task_id: task.id, user_id: user.id }
+  ];
+  await TaskSchedule.createMany(schedules);
+
+  const response = await client
+    .post(`api/v1/tasks/${task.id}/done`)
+    .loginVia(user, 'jwt')
+    .end();
+
+  response.assertStatus(403);
+  response.assertJSONSubset({
+    success: false
+  });
+});
+
+test('user can edit schedule remarks', async ({ client }) => {
+  const email = 'test@test.com';
+  const password = 'password';
+  const name = 'Task #1';
+  const remarks = 'New remark';
+
+  const user = await User.create({ email, password });
+  const task = await Task.create({ name, description: '', user_id: user.id });
+
+  const date1 = new Date();
+  date1.setHours(12, 0, 0, 0);
+
+  let schedule = {
+    due_date: date1,
+    remarks: 'test schedule #2',
+    task_id: task.id,
+    user_id: user.id
+  };
+  schedule = await TaskSchedule.create(schedule);
+
+  const response = await client
+    .put(`api/v1/tasks/update_schedule/${schedule.id}`)
+    .loginVia(user, 'jwt')
+    .field('remarks', remarks)
+    .end();
+
+  response.assertStatus(200);
+  response.assertJSONSubset({
+    success: true,
+    message: 'Schedule updated.',
+    data: {
+      remarks
+    }
+  });
 });

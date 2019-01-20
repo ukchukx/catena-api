@@ -31,5 +31,7 @@ Route.group(() => {
   Route.get('tasks', 'TaskController.list').as('task.list')
   Route.put('tasks/:id', 'TaskController.update').as('task.update')
   Route.delete('tasks/:id', 'TaskController.delete').as('task.delete')
+  Route.post('tasks/:id/done', 'TaskController.doneToday').as('task.done_today')
+  Route.put('tasks/update_schedule/:id', 'TaskController.updateSchedule').as('task.update_schedule')
 }).prefix('api/v1').formats(['json']).middleware(['auth:jwt'])
 

@@ -78,14 +78,13 @@ class TaskController {
     }
   }
 
-  async get({ params, auth, response }) {
+  async get({ params: { id }, auth, response }) {
     try {
       // get currently authenticated user
       const { current: { user } } = auth;
 
       const data = await Task.query()
-        .where('id', params.id)
-        .where('user_id', user.id)
+        .where({ id, user_id: user.id })
         .with('schedules')
         .firstOrFail();
 
@@ -105,7 +104,8 @@ class TaskController {
     try {
       // get currently authenticated user
       const { current: { user } } = auth;
-      const tasks = await Task.query()
+      const tasks = await Task
+        .query()
         .where('user_id', user.id)
         .with('schedules')
         .fetch();
@@ -122,7 +122,7 @@ class TaskController {
     }
   }
 
-  async update({ params, request, auth, response }) {
+  async update({ params: { id }, request, auth, response }) {
     // get data from the request and sanitize
     const sanitizationRules = {
       name: 'trim|strip_tags|strip_links',
@@ -151,8 +151,7 @@ class TaskController {
 
       const task = await Task
         .query()
-        .where('id', params.id)
-        .where('user_id', user.id)
+        .where({ id, user_id: user.id })
         .firstOrFail();
 
       // Update task fields with provided values
@@ -173,14 +172,14 @@ class TaskController {
     }
   }
 
-  async delete({ params, auth, response }) {
+  async delete({ params: { id }, auth, response }) {
     try {
       // get currently authenticated user
       const { current: { user } } = auth;
 
       const task = await Task
         .query()
-        .where({ id: params.id, user_id: user.id })
+        .where({ id, user_id: user.id })
         .firstOrFail();
 
       await task.delete();
@@ -190,6 +189,87 @@ class TaskController {
       return response.status(400).json({
         success: false,
         message: 'There was a problem deleting task, please try again later.'
+      });
+    }
+  }
+
+  async doneToday({ params: { id }, auth, response }) {
+    try {
+      // get currently authenticated user
+      const { current: { user } } = auth;
+      const dueDate = new Date();
+      dueDate.setHours(12, 0, 0, 0); // Can only mark schedules for today
+
+      const schedule = await TaskSchedule
+        .query()
+        .where({ task_id: id, user_id: user.id, due_date: dueDate, done: false })
+        .first();
+
+      if (!schedule) {
+        return response.status(403).json({
+          success: false,
+          message: 'Schedules can only be marked on their due date.'
+        });
+      }
+
+      // mark schedule as done
+      schedule.done = true;
+      await schedule.save();
+
+      const task = await Task.query()
+        .where({ id, user_id: user.id })
+        .with('schedules')
+        .firstOrFail();
+
+      return response.status(200).json({
+        success: true,
+        data: task
+      });
+    } catch (error) {
+      return response.status(400).json({
+        success: false,
+        message: 'There was a problem deleting task, please try again later.'
+      });
+    }
+  }
+
+  async updateSchedule({ params: { id }, request, response }) {
+    // get data from the request and sanitize
+    const sanitizationRules = {
+      remarks: 'trim'
+    };
+    const userData = sanitize(request.only(['remarks']), sanitizationRules);
+
+    // Validate user input
+    const validationRules = {
+      remarks: 'string'
+    };
+    const validation = await validate(userData, validationRules);
+    if (validation.fails()) {
+      return response.status(422).json({
+        success: false,
+        message: 'Validation failed',
+        errors: validation.messages()
+      });
+    }
+
+    try {
+      const schedule = await TaskSchedule.findOrFail(id);
+
+      // Update schedule fields with provided values
+      schedule.merge(userData);
+
+      await schedule.save();
+
+      return response.json({
+        success: true,
+        message: 'Schedule updated.',
+        data: schedule
+      });
+    } catch (error) {
+      return response.status(400).json({
+        success: false,
+        message: 'There was a problem updating schedule, please try again later.'
       });
     }
   }
