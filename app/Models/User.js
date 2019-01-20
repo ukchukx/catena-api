@@ -9,6 +9,7 @@ const Database = use('Database');
 class User extends Model {
   static boot() {
     super.boot();
+    this.addTrait('SoftDeletes');
 
     /**
      * A hook to hash the user password before saving
@@ -19,6 +20,14 @@ class User extends Model {
         userInstance.password = await Hash.make(userInstance.password);
       }
     });
+  }
+
+  tasks() {
+    return this.hasMany('App/Models/Task');
+  }
+
+  taskSchedules() {
+    return this.hasMany('App/Models/TaskSchedule');
   }
 
   async verifyPassword(password) {

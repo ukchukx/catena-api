@@ -7,6 +7,7 @@ module.exports = {
   },
   extends: 'airbnb-base',
   rules: {
+    'class-methods-use-this': 'off',
     'import/no-extraneous-dependencies': 'off',
     'object-shorthand': 'off',
     'object-curly-newline': 'off',
