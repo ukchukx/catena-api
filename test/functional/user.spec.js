@@ -156,3 +156,43 @@ test('user cannot retrieve profile with invalid token', async ({ client }) => {
 
   response.assertStatus(401);
 });
+
+test('user can change password', async ({ client }) => {
+  const email = 'test@test.com';
+  const password = 'password';
+
+  const user = await User.create({ email, password });
+
+  const response = await client
+    .post('api/v1/change_password')
+    .loginVia(user, 'jwt')
+    .field('password', password)
+    .field('new_password', email)
+    .end();
+
+  response.assertStatus(200);
+  response.assertJSONSubset({
+    success: true,
+    message: 'Password updated.'
+  });
+});
+
+test('changing password fails if wrong current password is provided', async ({ client }) => {
+  const email = 'test@test.com';
+  const password = 'password';
+
+  const user = await User.create({ email, password });
+
+  const response = await client
+    .post('api/v1/change_password')
+    .loginVia(user, 'jwt')
+    .field('password', 'wrongpassword')
+    .field('new_password', email)
+    .end();
+
+  response.assertStatus(400);
+  response.assertJSONSubset({
+    success: false,
+    message: 'Current password could not be verified. Please try again.'
+  });
+});
