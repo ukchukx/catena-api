@@ -7,6 +7,14 @@ class TaskSchedule extends Model {
     this.addTrait('SoftDeletes');
   }
 
+  static get dates() {
+    return super.dates.concat(['due_date']);
+  }
+
+  static castDates(field, value) {
+    return value.toISOString();
+  }
+
   user() {
     return this.belongsTo('App/Models/User');
   }

@@ -3,6 +3,7 @@ const Model = use('Model');
 
 /** @type {import('@adonisjs/framework/src/Hash')} */
 const Hash = use('Hash');
+
 const Database = use('Database');
 
 /* eslint-disable class-methods-use-this */
@@ -20,6 +21,10 @@ class User extends Model {
         userInstance.password = await Hash.make(userInstance.password);
       }
     });
+  }
+
+  static castDates(field, value) {
+    return value.toISOString();
   }
 
   tasks() {

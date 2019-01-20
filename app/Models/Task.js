@@ -7,6 +7,10 @@ class Task extends Model {
     this.addTrait('SoftDeletes');
   }
 
+  static castDates(field, value) {
+    return value.toISOString();
+  }
+
   user() {
     return this.belongsTo('App/Models/User');
   }
