@@ -62,20 +62,6 @@ class AuthController {
       });
     }
   }
-
-  async me({ auth, response }) {
-    try {
-      return response.json({
-        success: true,
-        data: await auth.getUser()
-      });
-    } catch (error) {
-      return response.status(403).json({
-        success: false,
-        message: 'Invalid email/password'
-      });
-    }
-  }
 }
 
 module.exports = AuthController;
