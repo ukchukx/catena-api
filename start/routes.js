@@ -20,7 +20,7 @@ Route.group(() => {
 }).prefix('api/v1').formats(['json'])
 
 Route.group(() => {
-  Route.post('me', 'UserController.me').as('user.me')
+  Route.route('me', 'UserController.me', ['GET', 'POST']).as('user.me')
   Route.post('update_profile', 'UserController.updateProfile').as('user.update_profile')
   Route.post('change_password', 'UserController.changePassword').as('user.change_password')
 }).prefix('api/v1').formats(['json']).middleware(['auth:jwt'])
