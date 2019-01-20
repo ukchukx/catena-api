@@ -37,6 +37,9 @@ test('successful signup returns token', async ({ client }) => {
   response.assertStatus(200);
   response.assertJSONSubset({
     success: true,
+    data: {
+      email
+    },
     token: {
       type: 'bearer'
     }

@@ -44,15 +44,27 @@ class AuthController {
   }
 
   async authenticate({ request, auth, response }) {
+    // get user data from the request and sanitize
+    const sanitizationRules = {
+      email: 'trim|normalize_email'
+    };
+    const userData = sanitize(request.only(['email', 'password']), sanitizationRules);
+
     try {
       // validate the user credentials and generate a JWT token
       const token = await auth.attempt(
-        request.input('email'),
-        request.input('password')
+        userData.email,
+        userData.password
       );
+
+      const data = await User.query()
+        .where('email', userData.email)
+        .with('tasks.schedules')
+        .firstOrFail();
 
       return response.json({
         success: true,
+        data,
         token
       });
     } catch (error) {
