@@ -25,3 +25,11 @@ Route.group(() => {
   Route.post('change_password', 'UserController.changePassword').as('user.change_password')
 }).prefix('api/v1').formats(['json']).middleware(['auth:jwt'])
 
+Route.group(() => {
+  Route.post('tasks', 'TaskController.create').as('task.create')
+  Route.get('tasks/:id', 'TaskController.get').as('task.get')
+  Route.get('tasks', 'TaskController.list').as('task.list')
+  Route.put('tasks/:id', 'TaskController.update').as('task.update')
+  Route.delete('tasks/:id', 'TaskController.delete').as('task.delete')
+}).prefix('api/v1').formats(['json']).middleware(['auth:jwt'])
+

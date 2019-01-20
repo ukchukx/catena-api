@@ -7,12 +7,12 @@ class SoftDelete {
     }, 'adonis_soft_deletes');
 
     Model.queryMacro('withTrashed', function () {
-      this.ignoreScopes('adonis_soft_deletes');
+      this.ignoreScopes(['adonis_soft_deletes']);
       return this;
     });
 
     Model.queryMacro('onlyTrashed', function () {
-      this.ignoreScopes('adonis_soft_deletes');
+      this.ignoreScopes(['adonis_soft_deletes']);
       this.whereNotNull(deletedAtColumn);
       return this;
     });

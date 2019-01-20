@@ -49,8 +49,7 @@ class UserController {
       const { current: { user } } = auth;
 
       // Update user fields with provided values
-      user.username = userData.username;
-      user.email = userData.email;
+      user.merge(userData);
 
       await user.save();
 
