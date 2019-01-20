@@ -196,3 +196,28 @@ test('changing password fails if wrong current password is provided', async ({ c
     message: 'Current password could not be verified. Please try again.'
   });
 });
+
+test('user can update profile', async ({ client }) => {
+  const email = 'test@test.com';
+  const password = 'password';
+  const username = 'new username';
+
+  const user = await User.create({ email, password });
+
+  const response = await client
+    .post('api/v1/update_profile')
+    .loginVia(user, 'jwt')
+    .field('username', username)
+    .field('email', email)
+    .end();
+
+  response.assertStatus(200);
+  response.assertJSONSubset({
+    success: true,
+    message: 'Profile updated.',
+    data: {
+      username,
+      email
+    }
+  });
+});

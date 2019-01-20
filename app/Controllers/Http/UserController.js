@@ -1,4 +1,5 @@
 const User = use('App/Models/User');
+const { validate, sanitize } = use('Validator');
 const Hash = use('Hash');
 
 class UserController {
@@ -17,6 +18,50 @@ class UserController {
       return response.status(403).json({
         success: false,
         message: 'Invalid email/password'
+      });
+    }
+  }
+
+  async updateProfile({ request, auth, response }) {
+    // get data from the request and sanitize
+    const sanitizationRules = {
+      email: 'trim|normalize_email',
+      username: 'trim|strip_tags|strip_links'
+    };
+    const userData = sanitize(request.only(['email', 'username']), sanitizationRules);
+
+    // Validate user input
+    const validationRules = {
+      email: `email|unique:users,email,id,${auth.current.user.id}`,
+      username: 'string|max:254'
+    };
+    const validation = await validate(userData, validationRules);
+    if (validation.fails()) {
+      return response.status(422).json({
+        success: false,
+        message: 'Validation failed',
+        errors: validation.messages()
+      });
+    }
+
+    try {
+      // get currently authenticated user
+      const { current: { user } } = auth;
+
+      user.username = request.input('username');
+      user.email = request.input('email');
+
+      await user.save();
+
+      return response.json({
+        success: true,
+        message: 'Profile updated.',
+        data: user
+      });
+    } catch (error) {
+      return response.status(400).json({
+        success: false,
+        message: 'There was a problem updating profile, please try again later.'
       });
     }
   }
