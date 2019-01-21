@@ -30,6 +30,7 @@ blocks:
       prologue:
         commands:
           - checkout
+          - cp ../.env .
           - cache restore node-modules-$SEMAPHORE_GIT_BRANCH-$(checksum package-lock.json),node-modules-$SEMAPHORE_GIT_BRANCH,node-modules-master
           - sem-service start mysql
           - sudo apt-get install -y -qq mysql-client
