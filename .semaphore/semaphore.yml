@@ -1,0 +1,50 @@
+version: v1.0
+name: Catena web
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+
+blocks:
+  - name: Install dependencies
+    task:
+      jobs:
+        - name: npm install and cache
+          commands:
+            - checkout
+            - cache restore node-modules-$SEMAPHORE_GIT_BRANCH-$(checksum package-lock.json),node-modules-$SEMAPHORE_GIT_BRANCH,node-modules-master
+            - npm install
+            - cache store node-modules-$SEMAPHORE_GIT_BRANCH-$(checksum package-lock.json) node_modules
+
+  - name: Tests
+    task:
+      env_vars:
+        - name: NODE_ENV
+          value: test
+        - name: DB_CONNECTION
+          value: mysql
+        - name: DB_PORT
+          value: 3306
+        - name: DB_DATABASE
+          value: catena_test
+      prologue:
+        commands:
+          - checkout
+          - cache restore node-modules-$SEMAPHORE_GIT_BRANCH-$(checksum package-lock.json),node-modules-$SEMAPHORE_GIT_BRANCH,node-modules-master
+          - sem-service start mysql
+          - sudo apt-get install -y -qq mysql-client
+          - mysql --host=0.0.0.0 -uroot -e "create database if not exists $DB_NAME"
+      jobs:
+        - name: run tests
+          commands:
+            - npm test
+promotions:
+  - name: Deploy to staging
+    pipeline_file: staging-deploy.yml
+    auto_promote_on:
+      - result: passed
+        branch:
+          - develop
+
+  - name: Deploy to production
+    pipeline_file: production-deploy.yml
