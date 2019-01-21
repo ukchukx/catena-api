@@ -27,6 +27,8 @@ blocks:
           value: mysql
         - name: DB_DATABASE
           value: catena_test
+        - name: DB_PASSWORD
+          value: ''
       prologue:
         commands:
           - checkout
