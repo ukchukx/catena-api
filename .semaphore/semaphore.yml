@@ -18,6 +18,8 @@ blocks:
 
   - name: Tests
     task:
+      secrets:
+        - name: catena-api-secrets
       env_vars:
         - name: NODE_ENV
           value: test
