@@ -1,8 +1,8 @@
 {
   "name": "adonis-api-app",
-  "version": "4.1.0",
+  "version": "1.0.0",
   "adonis-version": "4.1.0",
-  "description": "Adonisjs boilerplate for API server with pre-configured JWT",
+  "description": "Catena API. Inspired by https://jamesclear.com/stop-procrastinating-seinfeld-strategy",
   "main": "index.js",
   "scripts": {
     "start": "node server.js",

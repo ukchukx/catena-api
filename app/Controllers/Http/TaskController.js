@@ -48,7 +48,7 @@ class TaskController {
       if (userData.schedules) { // If schedules were supplied, create them now
         userData.schedules = userData.schedules
           .map((schedule) => { // Take only the due_date and remarks
-            const obj = { due_date: schedule.due_date, remarks: schedule.remarks || '' };
+            const obj = { due_date: schedule.due_date, remarks: schedule.remarks || '', done: false };
             // add the necessary relations
             obj.task_id = task.id;
             obj.user_id = user.id;
@@ -182,7 +182,7 @@ class TaskController {
         .where({ id, user_id: user.id })
         .firstOrFail();
 
-      await task.delete();
+      await task.forceDelete();
 
       return response.status(204).json({});
     } catch (error) {
@@ -198,7 +198,7 @@ class TaskController {
       // get currently authenticated user
       const { current: { user } } = auth;
       const dueDate = new Date();
-      dueDate.setHours(12, 0, 0, 0); // Can only mark schedules for today
+      dueDate.setUTCHours(12, 0, 0, 0); // Can only mark schedules for today
 
       const schedule = await TaskSchedule
         .query()
