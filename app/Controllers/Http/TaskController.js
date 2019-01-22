@@ -158,6 +158,7 @@ class TaskController {
       task.merge(userData);
 
       await task.save();
+      await task.load('schedules');
 
       return response.json({
         success: true,

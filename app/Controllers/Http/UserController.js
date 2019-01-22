@@ -52,6 +52,7 @@ class UserController {
       user.merge(userData);
 
       await user.save();
+      await user.load('tasks.schedules');
 
       return response.json({
         success: true,
@@ -84,6 +85,7 @@ class UserController {
     // hash and save new password
     user.password = await Hash.make(request.input('new_password'));
     await user.save();
+    await user.load('tasks.schedules');
 
     return response.json({
       success: true,
