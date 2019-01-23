@@ -1,0 +1,5 @@
+securityDefinitions:
+  token:
+    type: "bearer"
+    name: "authorization"
+    in: "header"

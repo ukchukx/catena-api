@@ -1,0 +1,86 @@
+/signup:
+  post:
+    tags:
+      - auth
+    summary: Create account
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: username
+        type: string
+      - in: body
+        name: email
+        type: string
+        required: true
+      - in: body
+        name: password
+        type: string
+        required: true
+    responses:
+      200:
+        description: 'successful operation'
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            token:
+              type: string
+            data:
+              $ref: '#/definitions/User'
+      422:
+        schema:
+          $ref: '#/definitions/ValidationErrorResponse'
+      400:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: There was a problem creating the user, please try again.
+/authenticate:
+  post:
+    tags:
+      - auth
+    summary: Get JWT token
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: email
+        type: string
+        required: true
+      - in: body
+        name: password
+        type: string
+        required: true
+    responses:
+      200:
+        description: 'successful operation'
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            token:
+              type: string
+            data:
+              $ref: '#/definitions/User'
+      403:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: Invalid email/password

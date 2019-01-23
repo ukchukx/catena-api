@@ -1,0 +1,131 @@
+/me:
+  post:
+    tags:
+      - user
+    summary: Get the profile of the current user
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - token: []
+    responses:
+      200:
+        description: 'successful operation'
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              $ref: '#/definitions/User'
+      403:
+        description: Invalid email/password
+  get:
+    tags:
+      - user
+    summary: Get the profile of the current user
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - token: []
+    responses:
+      200:
+        description: 'successful operation'
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              $ref: '#/definitions/User'
+      403:
+        description: unauthenticated
+/update_profile:
+  post:
+    tags:
+      - user
+    summary: Update user profile
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - token: []
+    parameters:
+      - in: body
+        name: username
+        type: string
+      - in: body
+        name: email
+        type: string
+    responses:
+      200:
+        description: 'successful operation'
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              $ref: '#/definitions/User'
+      422:
+        description: validation failed
+        schema:
+          $ref: '#/definitions/ValidationErrorResponse'
+      400:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: There was a problem updating profile, please try again later.
+/change_password:
+  post:
+    tags:
+      - user
+    summary: Change user password
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - token: []
+    parameters:
+      - in: body
+        name: password
+        type: string
+        required: true
+      - in: body
+        name: new_password
+        type: string
+        required: true
+    responses:
+      200:
+        description: 'successful operation'
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
+              example: Password updated.
+      422:
+        schema:
+          $ref: '#/definitions/ValidationErrorResponse'
+      400:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: Current password could not be verified. Please try again.

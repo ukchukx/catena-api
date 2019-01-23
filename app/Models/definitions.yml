@@ -1,0 +1,51 @@
+definitions:
+  ValidationErrorResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+        example: false
+      message:
+        type: string
+        example: Validation failed
+      errors:
+        type: array
+  User:
+    type: object
+    properties:
+      id:
+        type: integer
+      username:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+      tasks:
+        type: array
+        items:
+          $ref: '#/definitions/Task'
+  Task:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      description:
+        type: string
+      schedules:
+        type: array
+        items:
+          $ref: '#/definitions/Schedule'
+  Schedule:
+    type: object
+    properties:
+      id:
+        type: integer
+      due_date:
+        type: string
+      remarks:
+        type: string
+      done:
+        type: boolean

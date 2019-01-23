@@ -1,0 +1,181 @@
+/tasks:
+  post:
+    tags:
+      - task
+    summary: Create account
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - token: []
+    parameters:
+      - in: body
+        name: schedules
+        type: array
+        schema:
+          $ref: '#/definitions/Schedule'
+      - in: body
+        name: name
+        type: string
+        required: true
+      - in: body
+        name: description
+        type: string
+    responses:
+      200:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              $ref: '#/definitions/Task'
+      422:
+        schema:
+          $ref: '#/definitions/ValidationErrorResponse'
+      400:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: There was a problem creating task, please try again later.
+  get:
+    tags:
+      - task
+    summary: Get tasks
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - token: []
+    responses:
+      200:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              type: array
+              items:
+                $ref: '#/definitions/Task'
+      400:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: Could not retrieve tasks
+/tasks/{id}:
+  get:
+    tags:
+      - task
+    summary: Get task
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - token: []
+    parameters:
+      - in: path
+        name: id
+        type: integer
+    responses:
+      200:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              type: array
+              items:
+                $ref: '#/definitions/Task'
+      404:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: Task not found
+  put:
+    tags:
+      - task
+    summary: Update task
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - token: []
+    parameters:
+      - in: body
+        name: name
+        type: string
+      - in: body
+        name: description
+        type: string
+    responses:
+      200:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              type: array
+              items:
+                $ref: '#/definitions/Task'
+      422:
+        schema:
+          $ref: '#/definitions/ValidationErrorResponse'
+      400:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: There was a problem updating task, please try again later.
+  delete:
+    tags:
+      - task
+    summary: Delete task
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - token: []
+    parameters:
+      - in: path
+        name: id
+        type: integer
+    responses:
+      204:
+        description: deletion successful
+      400:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: There was a problem deleting task, please try again later.
