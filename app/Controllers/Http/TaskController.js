@@ -64,7 +64,6 @@ class TaskController {
         data: task
       });
     } catch (error) {
-      console.error('create', error);
       Logger.error('task create %j', {
         url: request.url(),
         user: auth.user.username(),
@@ -133,8 +132,7 @@ class TaskController {
     // Validate user input
     const validationRules = {
       name: 'string|max:255',
-      description: 'string',
-      schedules: 'array'
+      description: 'string'
     };
     const validation = await validate(userData, validationRules);
     if (validation.fails()) {
