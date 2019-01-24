@@ -134,7 +134,7 @@ test('user can retrieve profile with valid token', async ({ client }) => {
   const user = await User.create({ email, password });
 
   const response = await client
-    .post('api/v1/me')
+    .get('api/v1/profile')
     .loginVia(user, 'jwt')
     .end();
 
@@ -154,7 +154,7 @@ test('user cannot retrieve profile with invalid token', async ({ client }) => {
   await User.create({ email, password });
 
   const response = await client
-    .post('api/v1/me')
+    .post('api/v1/profile')
     .end();
 
   response.assertStatus(401);
@@ -208,7 +208,7 @@ test('user can update profile', async ({ client }) => {
   const user = await User.create({ email, password });
 
   const response = await client
-    .post('api/v1/update_profile')
+    .put('api/v1/profile')
     .loginVia(user, 'jwt')
     .field('username', username)
     .field('email', email)

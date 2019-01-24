@@ -205,7 +205,7 @@ class TaskController {
         .first();
 
       if (!schedule) {
-        return response.status(403).json({
+        return response.status(401).json({
           success: false,
           message: 'Schedules can only be marked on their due date.'
         });
@@ -227,7 +227,7 @@ class TaskController {
     } catch (error) {
       return response.status(400).json({
         success: false,
-        message: 'There was a problem deleting task, please try again later.'
+        message: 'There was a problem marking task, please try again later.'
       });
     }
   }

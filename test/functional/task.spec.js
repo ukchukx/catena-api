@@ -224,7 +224,7 @@ test('user can mark tasks as done on the due date', async ({ client }) => {
   const task = await Task.create({ name, description: '', user_id: user.id });
 
   const date1 = new Date();
-  date1.setHours(12, 0, 0, 0);
+  date1.setUTCHours(12, 0, 0, 0);
 
   const schedules = [
     { due_date: date1.toISOString(), remarks: 'test schedule #2', task_id: task.id, user_id: user.id }
@@ -272,7 +272,7 @@ test('user cannot mark tasks as done before the due date', async ({ client }) =>
     .loginVia(user, 'jwt')
     .end();
 
-  response.assertStatus(403);
+  response.assertStatus(401);
   response.assertJSONSubset({
     success: false
   });
@@ -300,7 +300,7 @@ test('user cannot mark tasks as done after the due date', async ({ client }) => 
     .loginVia(user, 'jwt')
     .end();
 
-  response.assertStatus(403);
+  response.assertStatus(401);
   response.assertJSONSubset({
     success: false
   });

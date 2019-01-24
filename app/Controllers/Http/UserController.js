@@ -3,7 +3,7 @@ const Hash = use('Hash');
 const User = use('App/Models/User');
 
 class UserController {
-  async me({ auth, response }) {
+  async getProfile({ auth, response }) {
     const data = await User.query()
       .where('id', auth.current.user.id)
       .with('tasks.schedules')

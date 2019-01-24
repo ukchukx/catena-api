@@ -1,4 +1,4 @@
-/me:
+/profile:
   post:
     tags:
       - user
@@ -43,8 +43,7 @@
               $ref: '#/definitions/User'
       403:
         description: unauthenticated
-/update_profile:
-  post:
+  put:
     tags:
       - user
     summary: Update user profile

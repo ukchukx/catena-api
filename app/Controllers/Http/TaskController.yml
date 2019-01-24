@@ -179,3 +179,88 @@
             message:
               type: string
               example: There was a problem deleting task, please try again later.
+/tasks/{id}/done:
+  post:
+    tags:
+      - task
+    summary: Mark task as done for that day
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - token: []
+    parameters:
+      - in: path
+        name: id
+        type: integer
+    responses:
+      200:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              $ref: '#/definitions/Task'
+      401:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: Schedules can only be marked on their due date.
+      400:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: There was a problem marking task, please try again later.
+/tasks/update_schedule/{id}:
+  put:
+    tags:
+      - task
+    summary: Update schedule
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - token: []
+    parameters:
+      - in: path
+        name: id
+        type: integer
+      - in: body
+        name: remarks
+        type: string
+        required: true
+    responses:
+      200:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              $ref: '#/definitions/Schedule'
+      422:
+        schema:
+          $ref: '#/definitions/ValidationErrorResponse'
+      400:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: There was a problem updating schedule, please try again later.
