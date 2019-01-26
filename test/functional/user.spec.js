@@ -1,5 +1,6 @@
 const { test, trait } = use('Test/Suite')('User');
 const User = use('App/Models/User');
+const Hash = use('Hash');
 
 trait('DatabaseTransactions');
 trait('Test/ApiClient');
@@ -160,11 +161,11 @@ test('user cannot retrieve profile with invalid token', async ({ client }) => {
   response.assertStatus(401);
 });
 
-test('user can change password', async ({ client }) => {
+test('user can change password', async ({ assert, client }) => {
   const email = 'test@test.com';
   const password = 'password';
 
-  const user = await User.create({ email, password });
+  let user = await User.create({ email, password });
 
   const response = await client
     .post('api/v1/change_password')
@@ -178,6 +179,10 @@ test('user can change password', async ({ client }) => {
     success: true,
     message: 'Password updated.'
   });
+
+  user = await User.find(user.id);
+
+  assert.isTrue(await Hash.verify(email, user.password));
 });
 
 test('changing password fails if wrong current password is provided', async ({ client }) => {

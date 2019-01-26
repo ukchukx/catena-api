@@ -82,8 +82,8 @@ class UserController {
       });
     }
 
-    // hash and save new password
-    user.password = await Hash.make(request.input('new_password'));
+    // save new password
+    user.password = request.input('new_password');
     await user.save();
     await user.load('tasks.schedules');
 
