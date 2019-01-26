@@ -196,12 +196,16 @@ class TaskController {
     try {
       // get currently authenticated user
       const { current: { user } } = auth;
-      const dueDate = new Date();
-      dueDate.setUTCHours(12, 0, 0, 0); // Can only mark schedules for today
+      const date = new Date();
+      let month = date.getMonth() + 1;
+      month = month > 10 ? month : `0${month}`;
+      const day = date.getUTCDate() > 10 ? date.getUTCDate() : `0${date.getUTCDate()}`;
+      const dateStr = `${date.getUTCFullYear()}-${month}-${day}%`;
 
       const schedule = await TaskSchedule
         .query()
-        .where({ task_id: id, user_id: user.id, due_date: dueDate, done: false })
+        .where({ task_id: id, user_id: user.id, done: false })
+        .where('due_date', 'like', dateStr)
         .first();
 
       if (!schedule) {
