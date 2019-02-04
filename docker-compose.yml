@@ -6,6 +6,4 @@ services:
     restart: unless-stopped
     volumes:
       - "./tmp:/app/tmp"
-    ports:
-      - "3333:3333"
-      - "3306:3306"
+    network_mode: host
