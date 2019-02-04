@@ -12,11 +12,11 @@ blocks:
         - name: npm install and cache
           commands:
             - checkout
-            - cache restore node-modules-$SEMAPHORE_GIT_BRANCH-$(checksum package-lock.json),node-modules-$SEMAPHORE_GIT_BRANCH,node-modules-master
+            - cache restore node-modules-$SEMAPHORE_GIT_BRANCH-$(checksum package.json),node-modules-$SEMAPHORE_GIT_BRANCH,node-modules-master
             - npm install
-            - cache store node-modules-$SEMAPHORE_GIT_BRANCH-$(checksum package-lock.json) node_modules
+            - cache store node-modules-$SEMAPHORE_GIT_BRANCH-$(checksum package.json) node_modules
 
-  - name: Tests
+  - name: Test
     task:
       secrets:
         - name: catena-api-secrets
@@ -38,16 +38,41 @@ blocks:
           - sudo apt-get install -y -qq mysql-client
           - mysql --host=0.0.0.0 -uroot -e "create database if not exists $DB_DATABASE"
       jobs:
-        - name: run tests
+        - name: test
           commands:
-            - npm test
+            - npm run test
+        - name: lint
+          commands:
+            - npm run lint
+
+  - name: Package
+    task:
+      env_vars:
+        - name: NODE_ENV
+          value: production
+      prologue:
+        commands:
+          - checkout
+          - cache restore node-modules-$SEMAPHORE_GIT_BRANCH-$(checksum package.json),node-modules-$SEMAPHORE_GIT_BRANCH,node-modules-master
+      jobs:
+        - name: package
+          commands:
+            - cache store app-$SEMAPHORE_WORKFLOW_ID app
+            - cache store config-$SEMAPHORE_WORKFLOW_ID config
+            - cache store database-$SEMAPHORE_WORKFLOW_ID database
+            - cache store public-$SEMAPHORE_WORKFLOW_ID public
+            - cache store start-$SEMAPHORE_WORKFLOW_ID start
+            - cache store ace-$SEMAPHORE_WORKFLOW_ID ace
+            - cache store app-$SEMAPHORE_WORKFLOW_ID app
+            - cache store package-$SEMAPHORE_WORKFLOW_ID package.json
+            - cache store server-$SEMAPHORE_WORKFLOW_ID server.js
 promotions:
-  - name: Deploy to staging
-    pipeline_file: staging-deploy.yml
+  - name: Deploy to production
+    pipeline_file: production-deploy.yml
     auto_promote_on:
       - result: passed
         branch:
-          - develop
+          - master
 
-  - name: Deploy to production
-    pipeline_file: production-deploy.yml
+  - name: Deploy to staging
+    pipeline_file: staging-deploy.yml

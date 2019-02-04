@@ -5,9 +5,34 @@ agent:
     type: e1-standard-2
     os_image: ubuntu1804
 blocks:
+  - name: Transfer
+    task:
+      secrets:
+        - name: ssh-key
+      jobs:
+        - name: transfer
+          commands:
+            - cache restore package-$SEMAPHORE_WORKFLOW_ID
+            - cache restore config-$SEMAPHORE_WORKFLOW_ID
+            - cache restore database-$SEMAPHORE_WORKFLOW_ID
+            - cache restore public-$SEMAPHORE_WORKFLOW_ID
+            - cache restore start-$SEMAPHORE_WORKFLOW_ID
+            - cache restore ace-$SEMAPHORE_WORKFLOW_ID
+            - cache restore app-$SEMAPHORE_WORKFLOW_ID
+            - cache restore server-$SEMAPHORE_WORKFLOW_ID
+            - echo 'Transferring app to production...'
+            - chmod 0600 ~/ssh-key/id_rsa*
+            - scp -i ~/ssh-key/id_rsa -o StrictHostKeyChecking=no -pr config database public start app ubuntu@109.237.25.250:~/apps/catena/api/
+            - scp -i ~/ssh-key/id_rsa -o StrictHostKeyChecking=no package.json server.js ace ubuntu@109.237.25.250:~/apps/catena/api/
+
   - name: Deploy
     task:
+      secrets:
+        - name: ssh-key
       jobs:
         - name: deploy
           commands:
-            - echo 'Deploying to production...'
+            - echo 'Deploying app on server...'
+            - chmod 0600 ~/ssh-key/id_rsa*
+            - ssh -i ~/ssh-key/id_rsa -o StrictHostKeyChecking=no ubuntu@109.237.25.250 'cd ~/apps/catena/api;docker build -t catena_api .;./run.sh'
+

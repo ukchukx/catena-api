@@ -1,0 +1,11 @@
+version: '2'
+services:
+   catena_api:
+    image: catena_api
+    container_name: catena_api
+    restart: unless-stopped
+    volumes:
+      - "./tmp:/app/tmp"
+    ports:
+      - "3333:3333"
+      - "3306:3306"

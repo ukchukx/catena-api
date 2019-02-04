@@ -1,0 +1,11 @@
+*
+!app/
+!config/
+!database/
+!public/
+!start/
+!.env
+!server.js
+!ace
+!package.json
+

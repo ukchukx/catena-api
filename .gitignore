@@ -11,3 +11,4 @@ tmp
 database/development.sqlite
 
 package-lock.json
+.directory
