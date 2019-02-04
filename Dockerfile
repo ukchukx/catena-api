@@ -8,4 +8,4 @@ RUN npm install -g pm2 && \
   npm cache clean --force
 
 # Start the app
-CMD pm2 start server.js
+CMD pm2 start server.js --no-daemon
