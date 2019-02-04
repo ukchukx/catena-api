@@ -22,10 +22,13 @@ blocks:
             - cache restore server-$SEMAPHORE_WORKFLOW_ID
             - cache restore run-$SEMAPHORE_WORKFLOW_ID
             - cache restore stop-$SEMAPHORE_WORKFLOW_ID
+            - cache restore dockerfile-$SEMAPHORE_WORKFLOW_ID
+            - cache restore dockerignore-$SEMAPHORE_WORKFLOW_ID
+            - cache restore dockercompose-$SEMAPHORE_WORKFLOW_ID
             - echo 'Transferring app to production...'
             - chmod 0600 ~/ssh-key/id_rsa*
             - scp -i ~/ssh-key/id_rsa -o StrictHostKeyChecking=no -pr config database public start app ubuntu@109.237.25.250:~/apps/catena/api/
-            - scp -i ~/ssh-key/id_rsa -o StrictHostKeyChecking=no package.json server.js ace {run,stop}.sh ubuntu@109.237.25.250:~/apps/catena/api/
+            - scp -i ~/ssh-key/id_rsa -o StrictHostKeyChecking=no docker-compose.yml .dockerignore Dockerfile package.json server.js ace {run,stop}.sh ubuntu@109.237.25.250:~/apps/catena/api/
 
   - name: Deploy
     task:

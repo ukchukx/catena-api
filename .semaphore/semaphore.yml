@@ -68,6 +68,9 @@ blocks:
             - cache store server-$SEMAPHORE_WORKFLOW_ID server.js
             - cache store run-$SEMAPHORE_WORKFLOW_ID run.sh
             - cache store stop-$SEMAPHORE_WORKFLOW_ID stop.sh
+            - cache store dockerfile-$SEMAPHORE_WORKFLOW_ID Dockerfile
+            - cache store dockerignore-$SEMAPHORE_WORKFLOW_ID .dockerignore
+            - cache store dockercompose-$SEMAPHORE_WORKFLOW_ID docker-compose.yml
 promotions:
   - name: Deploy to production
     pipeline_file: production-deploy.yml
