@@ -1,12 +1,12 @@
 version: v1.0
-name: Catena web
+name: Catena api
 agent:
   machine:
     type: e1-standard-2
     os_image: ubuntu1804
 
 blocks:
-  - name: Install dependencies
+  - name: Install
     task:
       jobs:
         - name: npm install and cache
