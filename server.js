@@ -16,6 +16,8 @@
 |     Also you can preload files by calling `preLoad('path/to/file')` method.
 |     Make sure to pass a relative path from the project root.
 */
+const { execSync } = require('child_process');
+console.log(execSync('node ace migration:run --force', { encoding: 'utf-8' }));
 
 const { Ignitor } = require('@adonisjs/ignitor')
 
