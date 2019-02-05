@@ -4,7 +4,8 @@ WORKDIR /app
 COPY . .
 
 RUN npm install -g pm2 && \
-  npm install --production && \
+  npm install && \
+  npm prune --production && \
   npm cache clean --force
 
 # Start the app
