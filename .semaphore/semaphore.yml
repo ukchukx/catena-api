@@ -4,8 +4,18 @@ agent:
   machine:
     type: e1-standard-2
     os_image: ubuntu1804
+execution_time_limit:
+  minutes: 30
 
 blocks:
+  - name: Check master
+    task:
+      jobs:
+        - name: check master
+          commands:
+            - if [ "$SEMAPHORE_GIT_BRANCH" != "master" ]; then false; fi
+            - echo 'Master branch received'
+
   - name: Install
     task:
       jobs:
