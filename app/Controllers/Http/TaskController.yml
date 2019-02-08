@@ -2,7 +2,7 @@
   post:
     tags:
       - task
-    summary: Create account
+    summary: Create task
     consumes:
       - application/json
     produces:

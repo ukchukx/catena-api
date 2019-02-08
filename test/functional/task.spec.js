@@ -33,7 +33,7 @@ test('user can create task', async ({ client }) => {
   });
 });
 
-test('user cannot create tasks with the same name', async ({ client }) => {
+test('user can create tasks with the same name', async ({ client }) => {
   const email = 'test@test.com';
   const password = 'password';
   const name = 'Task #1';
@@ -47,10 +47,15 @@ test('user cannot create tasks with the same name', async ({ client }) => {
     .field('name', task.name)
     .end();
 
-  response.assertStatus(422);
+  response.assertStatus(200);
   response.assertJSONSubset({
-    success: false,
-    message: 'Name already used.'
+    success: true,
+    message: 'Task created.',
+    data: {
+      name,
+      description: '',
+      schedules: []
+    }
   });
 });
 

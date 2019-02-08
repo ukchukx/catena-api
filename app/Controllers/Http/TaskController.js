@@ -31,14 +31,6 @@ class TaskController {
       // get currently authenticated user
       const { current: { user } } = auth;
 
-      // Check if the user has a task with this name
-      if (await Task.isDuplicate({ name: userData.name, user_id: user.id })) {
-        return response.status(422).json({
-          success: false,
-          message: 'Name already used.'
-        });
-      }
-
       const task = await Task.create({
         name: userData.name,
         description: userData.description || '',
