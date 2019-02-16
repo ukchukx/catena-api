@@ -17,6 +17,8 @@ const Route = use('Route')
 Route.group(() => {
   Route.post('signup', 'AuthController.signup').as('auth.signup')
   Route.post('authenticate', 'AuthController.authenticate').as('auth.authenticate')
+  Route.post('forgot', 'PasswordResetController.forgot').as('auth.forgot')
+  Route.post('reset', 'PasswordResetController.reset').as('auth.reset')
 }).prefix('api/v1').formats(['json'])
 
 Route.group(() => {

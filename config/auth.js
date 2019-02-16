@@ -88,5 +88,8 @@ module.exports = {
     scheme: 'api',
     uid: 'email',
     password: 'password'
+  },
+  password_reset: {
+    expires_in_minutes: 120
   }
 }

@@ -1,6 +1,8 @@
 const { test, trait } = use('Test/Suite')('User');
 const User = use('App/Models/User');
+const PasswordReset = use('App/Models/PasswordReset');
 const Hash = use('Hash');
+const crypto = use('crypto');
 
 trait('DatabaseTransactions');
 trait('Test/ApiClient');
@@ -226,6 +228,67 @@ test('user can update profile', async ({ client }) => {
     data: {
       username,
       email
+    }
+  });
+});
+
+test('sending a password reset link for an existing account succeeds', async ({ client }) => {
+  const email = 'test@test.com';
+  const password = 'password';
+
+  await User.create({ email, password });
+
+  const response = await client
+    .post('api/v1/forgot')
+    .field('email', email)
+    .end();
+
+  response.assertStatus(200);
+  response.assertJSON({
+    success: true,
+    message: 'Password reset email sent'
+  });
+}).timeout(0);
+
+test('sending a password reset link fails for a non-existent account', async ({ client }) => {
+  const email = 'test@test.com';
+
+  const response = await client
+    .post('api/v1/forgot')
+    .field('email', email)
+    .end();
+
+  response.assertStatus(422);
+  response.assertJSONSubset({
+    success: false,
+    message: 'Validation failed'
+  });
+});
+
+test('password reset with valid token succeeds', async ({ client }) => {
+  const email = 'test@test.com';
+  const password = 'password';
+
+  await User.create({ email, password });
+
+  const token = crypto.randomBytes(20).toString('hex');
+  await PasswordReset.create({ email, token: await Hash.make(token) });
+
+  const response = await client
+    .post('api/v1/reset')
+    .field('email', email)
+    .field('token', token)
+    .field('password', 'newpassword')
+    .end();
+
+  response.assertStatus(200);
+  response.assertJSONSubset({
+    success: true,
+    data: {
+      email
+    },
+    token: {
+      type: 'bearer'
     }
   });
 });
