@@ -27,8 +27,8 @@ class PasswordResetController {
       });
     }
 
-    const token = await Hash.make(crypto.randomBytes(20).toString('hex'));
-    requestData.token = token;
+    const token = crypto.randomBytes(20).toString('hex');
+    requestData.token = await Hash.make(token);
 
     // Delete any previous reset tokens for this email,
     // then save a reset token for this email
@@ -38,7 +38,7 @@ class PasswordResetController {
       .delete()
       .then(() => PasswordReset.create(requestData));
 
-    this._sendResetLink(requestData);
+    this._sendResetLink({ token, email: requestData.email });
 
     return response.json({
       success: true,
@@ -85,6 +85,7 @@ class PasswordResetController {
   }
 
   async _sendResetLink(params) {
+    // console.info(`http://localhost:8080/#/app/reset?email=${params.email}&token=${params.token}`);
     await Mail.send(
       'emails.forgot',
       params,
