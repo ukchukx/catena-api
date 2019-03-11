@@ -194,6 +194,8 @@ class TaskController {
       const day = date.getUTCDate() > 10 ? date.getUTCDate() : `0${date.getUTCDate()}`;
       const dateStr = `${date.getUTCFullYear()}-${month}-${day}%`;
 
+      Logger.info(`Attempting to mark task ${id} on date ${dateStr}`);
+
       const schedule = await TaskSchedule
         .query()
         .where({ task_id: id, user_id: user.id, done: false })
@@ -201,6 +203,7 @@ class TaskController {
         .first();
 
       if (!schedule) {
+        Logger.info(`No schedule found for task ${id} on date ${dateStr}`);
         return response.status(401).json({
           success: false,
           message: 'Schedules can only be marked on their due date.'
@@ -210,6 +213,8 @@ class TaskController {
       // mark schedule as done
       schedule.done = true;
       await schedule.save();
+
+      Logger.info(`Task ${id} on date ${dateStr} marked. Schedule: ${schedule}`);
 
       const task = await Task.query()
         .where({ id, user_id: user.id })
