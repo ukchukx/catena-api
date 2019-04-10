@@ -191,7 +191,7 @@ class TaskController {
       const date = new Date();
       let month = date.getMonth() + 1;
       month = month > 10 ? month : `0${month}`;
-      const day = date.getUTCDate() > 10 ? date.getUTCDate() : `0${date.getUTCDate()}`;
+      const day = date.getUTCDate() >= 10 ? date.getUTCDate() : `0${date.getUTCDate()}`;
       const dateStr = `${date.getUTCFullYear()}-${month}-${day}%`;
 
       Logger.info(`Attempting to mark task ${id} on date ${dateStr}`);
@@ -214,7 +214,7 @@ class TaskController {
       schedule.done = true;
       await schedule.save();
 
-      Logger.info(`Task ${id} on date ${dateStr} marked. Schedule: ${schedule}`);
+      Logger.info(`Task ${id} on date ${dateStr} marked.`);
 
       const task = await Task.query()
         .where({ id, user_id: user.id })
