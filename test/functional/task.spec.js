@@ -8,7 +8,7 @@ trait('Test/ApiClient');
 trait('Auth/Client');
 
 
-test('user can create task', async ({ client }) => {
+test('User can create tasks', async ({ client }) => {
   const email = 'test@test.com';
   const password = 'password';
   const name = 'Task #1';
@@ -33,7 +33,7 @@ test('user can create task', async ({ client }) => {
   });
 });
 
-test('user can create tasks with the same name', async ({ client }) => {
+test('Tasks can be created with the same name', async ({ client }) => {
   const email = 'test@test.com';
   const password = 'password';
   const name = 'Task #1';
@@ -59,7 +59,7 @@ test('user can create tasks with the same name', async ({ client }) => {
   });
 });
 
-test('user can create task  with schedules', async ({ client }) => {
+test('Tasks can be created with schedules', async ({ client }) => {
   const email = 'test@test.com';
   const password = 'password';
   const name = 'Task #1';
@@ -84,6 +84,38 @@ test('user can create task  with schedules', async ({ client }) => {
       name,
       description: '',
       schedules: []
+    }
+  });
+});
+
+test('schedules created without from and to times have defaults', async ({ client }) => {
+  const email = 'test@test.com';
+  const password = 'password';
+  const name = 'Task #1';
+
+  const user = await User.create({ email, password });
+  const schedules = [
+    { due_date: new Date().toISOString(), remarks: 'Schedule #1' },
+    { due_date: new Date().toISOString(), remarks: 'Schedule #2' }
+  ];
+
+  const response = await client
+    .post('api/v1/tasks')
+    .loginVia(user, 'jwt')
+    .send({ name, schedules })
+    .end();
+
+  response.assertStatus(200);
+  response.assertJSONSubset({
+    success: true,
+    message: 'Task created.',
+    data: {
+      name,
+      description: '',
+      schedules: [
+        { from: '00:00:00', to: '23:59:59', remarks: 'Schedule #1' },
+        { from: '00:00:00', to: '23:59:59', remarks: 'Schedule #2' }
+      ]
     }
   });
 });
@@ -220,7 +252,7 @@ test('task deletion is soft', async ({ assert }) => {
   assert.equal(1, count);
 });
 
-test('user can mark tasks as done on the due date', async ({ client }) => {
+test('Tasks can be marked as done within the due date', async ({ client }) => {
   const email = 'test@test.com';
   const password = 'password';
   const name = 'Task #1';
@@ -228,11 +260,20 @@ test('user can mark tasks as done on the due date', async ({ client }) => {
   const user = await User.create({ email, password });
   const task = await Task.create({ name, description: '', user_id: user.id });
 
-  const date1 = new Date();
-  date1.setUTCHours(12, 0, 0, 0);
+  const date = new Date();
+  date.setMilliseconds(0);
+  let hours = date.getHours();
+  hours = hours >= 10 ? hours : `0${hours}`;
 
   const schedules = [
-    { due_date: date1.toISOString(), remarks: 'test schedule #2', task_id: task.id, user_id: user.id }
+    { 
+      due_date: date.toISOString(),
+      from: `${hours}:00:00`, 
+      to: `${hours}:59:59`, 
+      remarks: 'test schedule #2', 
+      task_id: task.id, 
+      user_id: user.id 
+    }
   ];
   await TaskSchedule.createMany(schedules);
 
@@ -248,14 +289,12 @@ test('user can mark tasks as done on the due date', async ({ client }) => {
       name,
       description: task.description,
       user_id: user.id,
-      schedules: [
-        Object.assign(schedules[0], { done: 1 })
-      ]
+      schedules: [Object.assign(schedules[0], { done: 1 })]
     }
   });
 });
 
-test('user cannot mark tasks as done before the due date', async ({ client }) => {
+test('Tasks cannot be marked as done outside the due date', async ({ client }) => {
   const email = 'test@test.com';
   const password = 'password';
   const name = 'Task #1';
@@ -263,12 +302,20 @@ test('user cannot mark tasks as done before the due date', async ({ client }) =>
   const user = await User.create({ email, password });
   const task = await Task.create({ name, description: '', user_id: user.id });
 
-  const date1 = new Date();
-  date1.setDate(date1.getDate() + 1);
-  date1.setHours(12, 0, 0, 0);
+  const date = new Date();
+  date.setMilliseconds(0);
+  let hours = date.getHours();
+  hours = hours >= 10 ? hours : `0${hours}`;
 
   const schedules = [
-    { due_date: date1.toISOString(), remarks: 'test schedule #2', task_id: task.id, user_id: user.id }
+    { 
+      due_date: date.toISOString(), 
+      from: `${hours - 1}:00:00`, 
+      to: `${hours - 1}:59:59`, 
+      remarks: 'test schedule #2', 
+      task_id: task.id, 
+      user_id: user.id 
+    }
   ];
   await TaskSchedule.createMany(schedules);
 
@@ -278,37 +325,7 @@ test('user cannot mark tasks as done before the due date', async ({ client }) =>
     .end();
 
   response.assertStatus(401);
-  response.assertJSONSubset({
-    success: false
-  });
-});
-
-test('user cannot mark tasks as done after the due date', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
-  const name = 'Task #1';
-
-  const user = await User.create({ email, password });
-  const task = await Task.create({ name, description: '', user_id: user.id });
-
-  const date1 = new Date();
-  date1.setDate(date1.getDate() - 1);
-  date1.setHours(12, 0, 0, 0);
-
-  const schedules = [
-    { due_date: date1.toISOString(), remarks: 'test schedule #2', task_id: task.id, user_id: user.id }
-  ];
-  await TaskSchedule.createMany(schedules);
-
-  const response = await client
-    .post(`api/v1/tasks/${task.id}/done`)
-    .loginVia(user, 'jwt')
-    .end();
-
-  response.assertStatus(401);
-  response.assertJSONSubset({
-    success: false
-  });
+  response.assertJSONSubset({ success: false });
 });
 
 test('user can edit schedule remarks', async ({ client }) => {

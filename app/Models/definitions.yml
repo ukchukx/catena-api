@@ -45,6 +45,10 @@ definitions:
         type: integer
       due_date:
         type: string
+      from:
+        type: string
+      to:
+        type: string
       remarks:
         type: string
       done:

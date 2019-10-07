@@ -4,7 +4,7 @@ const Task = use('App/Models/Task');
 const TaskSchedule = use('App/Models/TaskSchedule');
 
 class TaskController {
-  async create({ request, auth, response }) {
+  async create({ request, auth: { current: { user } }, response }) {
     // get data from the request and sanitize
     const sanitizationRules = {
       name: 'trim|strip_tags|strip_links',
@@ -19,6 +19,7 @@ class TaskController {
       schedules: 'array'
     };
     const validation = await validate(userData, validationRules);
+
     if (validation.fails()) {
       return response.status(422).json({
         success: false,
@@ -28,9 +29,6 @@ class TaskController {
     }
 
     try {
-      // get currently authenticated user
-      const { current: { user } } = auth;
-
       const task = await Task.create({
         name: userData.name,
         description: userData.description || '',
@@ -39,28 +37,25 @@ class TaskController {
 
       if (userData.schedules) { // If schedules were supplied, create them now
         userData.schedules = userData.schedules
-          .map((schedule) => { // Take only the due_date and remarks
-            const obj = { due_date: schedule.due_date, remarks: schedule.remarks || '', done: false };
-            // add the necessary relations
-            obj.task_id = task.id;
-            obj.user_id = user.id;
-            return obj;
-          });
+          .map(schedule => (
+            { 
+              due_date: schedule.due_date, 
+              from: schedule.from || '00:00:00', 
+              to: schedule.to || '23:59:59', 
+              remarks: schedule.remarks || '', 
+              done: false,
+              task_id: task.id,
+              user_id: user.id
+            }));
+
         await TaskSchedule.createMany(userData.schedules);
       }
+
       await task.load('schedules');
 
-      return response.json({
-        success: true,
-        message: 'Task created.',
-        data: task
-      });
+      return response.json({ success: true, message: 'Task created.', data: task });
     } catch (error) {
-      Logger.error('task create %j', {
-        url: request.url(),
-        user: auth.user.username(),
-        error
-      });
+      Logger.error('task create %j', { url: request.url(), user: user.username(), error });
 
       return response.status(400).json({
         success: false,
@@ -69,11 +64,8 @@ class TaskController {
     }
   }
 
-  async get({ params: { id }, auth, response }) {
+  async get({ params: { id }, auth: { current: { user } }, response }) {
     try {
-      // get currently authenticated user
-      const { current: { user } } = auth;
-
       const data = await Task.query()
         .where({ id, user_id: user.id })
         .with('schedules')
@@ -91,10 +83,8 @@ class TaskController {
     }
   }
 
-  async list({ auth, response }) {
+  async list({ auth: { current: { user } }, response }) {
     try {
-      // get currently authenticated user
-      const { current: { user } } = auth;
       const tasks = await Task
         .query()
         .where('user_id', user.id)
@@ -113,7 +103,7 @@ class TaskController {
     }
   }
 
-  async update({ params: { id }, request, auth, response }) {
+  async update({ params: { id }, request, auth: { current: { user } }, response }) {
     // get data from the request and sanitize
     const sanitizationRules = {
       name: 'trim|strip_tags|strip_links',
@@ -136,9 +126,6 @@ class TaskController {
     }
 
     try {
-      // get currently authenticated user
-      const { current: { user } } = auth;
-
       const task = await Task
         .query()
         .where({ id, user_id: user.id })
@@ -163,11 +150,8 @@ class TaskController {
     }
   }
 
-  async delete({ params: { id }, auth, response }) {
+  async delete({ params: { id }, auth: { current: { user } }, response }) {
     try {
-      // get currently authenticated user
-      const { current: { user } } = auth;
-
       const task = await Task
         .query()
         .where({ id, user_id: user.id })
@@ -184,26 +168,34 @@ class TaskController {
     }
   }
 
-  async doneToday({ params: { id }, auth, response }) {
+  async doneToday({ params: { id }, auth: { current: { user } }, response }) {
     try {
-      // get currently authenticated user
-      const { current: { user } } = auth;
       const date = new Date();
       let month = date.getMonth() + 1;
-      month = month > 10 ? month : `0${month}`;
-      const day = date.getUTCDate() >= 10 ? date.getUTCDate() : `0${date.getUTCDate()}`;
-      const dateStr = `${date.getUTCFullYear()}-${month}-${day}%`;
+      month = month >= 10 ? month : `0${month}`;
+      const day = date.getDate() >= 10 ? date.getDate() : `0${date.getDate()}`;
+      const dateStr = `${date.getFullYear()}-${month}-${day}%`;
+      let hours = date.getHours();
+      hours = hours >= 10 ? hours : `0${hours}`;
+      let minutes = date.getMinutes();
+      minutes = minutes >= 10 ? minutes : `0${minutes}`;
+      let seconds = date.getMinutes();
+      seconds = seconds >= 10 ? seconds : `0${seconds}`;
+      const time = parseInt(`${hours}${minutes}${seconds}`, 10);
 
-      Logger.info(`Attempting to mark task ${id} on date ${dateStr}`);
+      Logger.info(`Attempting to mark task ${id} on ${date}`);
 
       const schedule = await TaskSchedule
         .query()
         .where({ task_id: id, user_id: user.id, done: false })
         .where('due_date', 'like', dateStr)
+        .where('from', '<=', time)
+        .where('to', '>=', time)
         .first();
-
+        
       if (!schedule) {
-        Logger.info(`No schedule found for task ${id} on date ${dateStr}`);
+        Logger.info(`No schedule found for task ${id} on ${date}`);
+
         return response.status(401).json({
           success: false,
           message: 'Schedules can only be marked on their due date.'
@@ -214,18 +206,17 @@ class TaskController {
       schedule.done = true;
       await schedule.save();
 
-      Logger.info(`Task ${id} on date ${dateStr} marked.`);
+      Logger.info(`Task ${id} on ${date} marked.`);
 
       const task = await Task.query()
         .where({ id, user_id: user.id })
         .with('schedules')
         .firstOrFail();
 
-      return response.status(200).json({
-        success: true,
-        data: task
-      });
+      return response.status(200).json({ success: true, data: task });
     } catch (error) {
+      console.warn(error);
+      Logger.error(`${error}`);
       return response.status(400).json({
         success: false,
         message: 'There was a problem marking task, please try again later.'
