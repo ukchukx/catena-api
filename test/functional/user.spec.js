@@ -10,12 +10,11 @@ trait('Auth/Client');
 
 test('user is signed up', async ({ client }) => {
   const email = 'test@test.com';
-  const password = 'password';
 
   const response = await client
     .post('api/v1/signup')
     .field('email', email)
-    .field('password', password)
+    .field('password', 'password')
     .end();
 
   response.assertStatus(200);
@@ -29,12 +28,11 @@ test('user is signed up', async ({ client }) => {
 
 test('successful signup returns token', async ({ client }) => {
   const email = 'test@test.com';
-  const password = 'password';
 
   const response = await client
     .post('api/v1/signup')
     .field('email', email)
-    .field('password', password)
+    .field('password', 'password')
     .end();
 
   response.assertStatus(200);
@@ -132,9 +130,8 @@ test('authentication fails with wrong credentials', async ({ client }) => {
 
 test('user can retrieve profile with valid token', async ({ client }) => {
   const email = 'test@test.com';
-  const password = 'password';
 
-  const user = await User.create({ email, password });
+  const user = await User.create({ email, password: 'password' });
 
   const response = await client
     .get('api/v1/profile')
@@ -151,10 +148,7 @@ test('user can retrieve profile with valid token', async ({ client }) => {
 });
 
 test('user cannot retrieve profile with invalid token', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
-
-  await User.create({ email, password });
+  await User.create({ email: 'test@test.com', password: 'password' });
 
   const response = await client
     .post('api/v1/profile')
@@ -189,9 +183,8 @@ test('user can change password', async ({ assert, client }) => {
 
 test('changing password fails if wrong current password is provided', async ({ client }) => {
   const email = 'test@test.com';
-  const password = 'password';
 
-  const user = await User.create({ email, password });
+  const user = await User.create({ email, password: 'password' });
 
   const response = await client
     .post('api/v1/change_password')
@@ -209,10 +202,9 @@ test('changing password fails if wrong current password is provided', async ({ c
 
 test('user can update profile', async ({ client }) => {
   const email = 'test@test.com';
-  const password = 'password';
   const username = 'new username';
 
-  const user = await User.create({ email, password });
+  const user = await User.create({ email, password: 'password' });
 
   const response = await client
     .put('api/v1/profile')
@@ -234,9 +226,8 @@ test('user can update profile', async ({ client }) => {
 
 test('sending a password reset link for an existing account succeeds', async ({ client }) => {
   const email = 'test@test.com';
-  const password = 'password';
 
-  await User.create({ email, password });
+  await User.create({ email, password: 'password' });
 
   const response = await client
     .post('api/v1/forgot')
@@ -251,11 +242,9 @@ test('sending a password reset link for an existing account succeeds', async ({ 
 }).timeout(0);
 
 test('sending a password reset link fails for a non-existent account', async ({ client }) => {
-  const email = 'test@test.com';
-
   const response = await client
     .post('api/v1/forgot')
-    .field('email', email)
+    .field('email', 'test@test.com')
     .end();
 
   response.assertStatus(422);
@@ -267,9 +256,8 @@ test('sending a password reset link fails for a non-existent account', async ({ 
 
 test('password reset with valid token succeeds', async ({ client }) => {
   const email = 'test@test.com';
-  const password = 'password';
 
-  await User.create({ email, password });
+  await User.create({ email, password: 'password' });
 
   const token = crypto.randomBytes(20).toString('hex');
   await PasswordReset.create({ email, token: await Hash.make(token) });

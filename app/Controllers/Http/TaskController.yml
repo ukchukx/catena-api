@@ -219,6 +219,74 @@
             message:
               type: string
               example: There was a problem deleting task, please try again later.
+/tasks/{id}/archive:
+  post:
+    tags:
+      - task
+    summary: Archive task
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - token: []
+    parameters:
+      - in: path
+        name: id
+        type: integer
+    responses:
+      200:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              $ref: '#/definitions/Task'
+      404:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: Task not found
+/tasks/{id}/restore:
+  post:
+    tags:
+      - task
+    summary: Restore task
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - token: []
+    parameters:
+      - in: path
+        name: id
+        type: integer
+    responses:
+      200:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              $ref: '#/definitions/Task'
+      404:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: Task not found
 /tasks/{id}/done:
   post:
     tags:
@@ -263,7 +331,7 @@
             message:
               type: string
               example: There was a problem marking task, please try again later.
-/tasks/update_schedule/{id}:
+/tasks/schedules/{id}:
   put:
     tags:
       - task

@@ -9,11 +9,9 @@ trait('Auth/Client');
 
 
 test('User can create tasks', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
   const name = 'Task #1';
 
-  const user = await User.create({ email, password });
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
 
   const response = await client
     .post('api/v1/tasks')
@@ -34,11 +32,9 @@ test('User can create tasks', async ({ client }) => {
 });
 
 test('Tasks can be created with the same name', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
   const name = 'Task #1';
 
-  const user = await User.create({ email, password });
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
   const task = await Task.create({ name, description: '', user_id: user.id });
 
   const response = await client
@@ -60,11 +56,9 @@ test('Tasks can be created with the same name', async ({ client }) => {
 });
 
 test('Tasks can be created with schedules', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
   const name = 'Task #1';
 
-  const user = await User.create({ email, password });
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
   const schedules = [
     { due_date: new Date().toISOString(), remarks: 'test schedule #1' },
     { due_date: new Date().toISOString(), remarks: 'test schedule #2' }
@@ -89,11 +83,9 @@ test('Tasks can be created with schedules', async ({ client }) => {
 });
 
 test('schedules created without from and to times have defaults', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
   const name = 'Task #1';
 
-  const user = await User.create({ email, password });
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
   const schedules = [
     { due_date: new Date().toISOString(), remarks: 'Schedule #1' },
     { due_date: new Date().toISOString(), remarks: 'Schedule #2' }
@@ -121,14 +113,11 @@ test('schedules created without from and to times have defaults', async ({ clien
 });
 
 test('user can update tasks', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
-  const name = 'Task #1';
   const newName = 'Task #0';
   const description = 'Task description@@>$?#';
 
-  const user = await User.create({ email, password });
-  const task = await Task.create({ name, description: '', user_id: user.id });
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
+  const task = await Task.create({ name: 'Task #1', description: '', user_id: user.id });
 
   const response = await client
     .put(`api/v1/tasks/${task.id}`)
@@ -149,11 +138,9 @@ test('user can update tasks', async ({ client }) => {
 });
 
 test('user can get tasks', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
   const name = 'Task #1';
 
-  const user = await User.create({ email, password });
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
   const task = await Task.create({ name, description: '', user_id: user.id });
 
   let response = await client
@@ -183,11 +170,9 @@ test('user can get tasks', async ({ client }) => {
 });
 
 test('user can list tasks', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
   const name = 'Task #1';
 
-  const user = await User.create({ email, password });
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
   const task = await Task.create({ name, description: '', user_id: user.id });
 
   const date1 = new Date();
@@ -222,11 +207,9 @@ test('user can list tasks', async ({ client }) => {
 });
 
 test('users can get public tasks without authentication', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
   const name = 'Public';
 
-  const user = await User.create({ email, password });
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
   const publicTask = await Task.create({ name, description: '', visibility: 'public', user_id: user.id });
   const privateTask = await Task.create({ name: 'Private', description: '', visibility: 'private', user_id: user.id });
 
@@ -255,12 +238,8 @@ test('users can get public tasks without authentication', async ({ client }) => 
 });
 
 test('user can delete tasks', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
-  const name = 'Task #1';
-
-  const user = await User.create({ email, password });
-  const task = await Task.create({ name, description: '', user_id: user.id });
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
+  const task = await Task.create({ name: 'Task #1', description: '', user_id: user.id });
 
   const response = await client
     .delete(`api/v1/tasks/${task.id}`)
@@ -270,27 +249,185 @@ test('user can delete tasks', async ({ client }) => {
   response.assertStatus(204);
 });
 
-test('task deletion is soft', async ({ assert }) => {
-  const email = 'test@test.com';
-  const password = 'password';
-  const name = 'Task #1';
+test('user can archive tasks', async ({ assert, client }) => {
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
+  const task = await Task.create({ name: 'Task #1', description: '', user_id: user.id });
 
-  const user = await User.create({ email, password });
-  const task = await Task.create({ name, description: '', user_id: user.id });
-  await task.delete();
+  const today = new Date();
+  const tomorrow = new Date(today.getTime() + 86400000);
+  const yesterday = new Date(today.getTime() - 86400000);
 
-  const count = await Task.query().where('id', task.id).withTrashed().getCount();
+  await TaskSchedule.createMany([
+    {
+      due_date: tomorrow.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    },
+    {
+      due_date: today.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    },
+    {
+      due_date: yesterday.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    }
+  ]);
 
-  assert.isNull(await Task.find(task.id));
-  assert.equal(1, count);
+  const response = await client
+    .post(`api/v1/tasks/${task.id}/archive`)
+    .loginVia(user, 'jwt')
+    .end();
+
+  response.assertStatus(200);
+  response.assertJSONSubset({
+    success: true,
+    data: {
+      schedules: []
+    }
+  });
+  assert.equal(1, response.body.data.schedules.length);
+  assert.isNotNull(response.body.data.deleted_at);
+
+  const undeletedCount = await TaskSchedule.query().where('task_id', task.id).getCount();
+  const totalCount = await TaskSchedule.query().where('task_id', task.id).withTrashed().getCount();
+
+  assert.equal(1, undeletedCount);
+  assert.equal(3, totalCount);
+});
+
+test('user can restore tasks', async ({ assert, client }) => {
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
+  const task = await Task.create({ name: 'Task #1', description: '', user_id: user.id });
+
+  const today = new Date();
+  const tomorrow = new Date(today.getTime() + 86400000);
+  const yesterday = new Date(today.getTime() - 86400000);
+
+  await TaskSchedule.createMany([
+    {
+      due_date: tomorrow.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    },
+    {
+      due_date: today.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    },
+    {
+      due_date: yesterday.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    }
+  ]);
+
+  let response = await client
+    .post(`api/v1/tasks/${task.id}/archive`)
+    .loginVia(user, 'jwt')
+    .end();
+
+  response = await client
+    .post(`api/v1/tasks/${task.id}/restore`)
+    .loginVia(user, 'jwt')
+    .end();
+
+  response.assertStatus(200);
+  response.assertJSONSubset({
+    success: true,
+    data: {
+      schedules: []
+    }
+  });
+  assert.equal(3, response.body.data.schedules.length);
+  assert.isNull(response.body.data.deleted_at);
+
+  const undeletedCount = await TaskSchedule.query().where('task_id', task.id).getCount();
+  const totalCount = await TaskSchedule.query().where('task_id', task.id).withTrashed().getCount();
+
+  assert.equal(3, undeletedCount);
+  assert.equal(3, totalCount);
+});
+
+test('restoring unarchived tasks does nothing', async ({ assert, client }) => {
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
+  const task = await Task.create({ name: 'Task #1', description: '', user_id: user.id });
+
+  const today = new Date();
+  const tomorrow = new Date(today.getTime() + 86400000);
+  const yesterday = new Date(today.getTime() - 86400000);
+
+  await TaskSchedule.createMany([
+    {
+      due_date: tomorrow.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    },
+    {
+      due_date: today.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    },
+    {
+      due_date: yesterday.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    }
+  ]);
+
+  const response = await client
+    .post(`api/v1/tasks/${task.id}/restore`)
+    .loginVia(user, 'jwt')
+    .end();
+
+  response.assertStatus(200);
+  response.assertJSONSubset({
+    success: true,
+    data: {
+      schedules: []
+    }
+  });
+  assert.equal(3, response.body.data.schedules.length);
+
+  const undeletedCount = await TaskSchedule.query().where('task_id', task.id).getCount();
+  const totalCount = await TaskSchedule.query().where('task_id', task.id).withTrashed().getCount();
+
+  assert.equal(3, undeletedCount);
+  assert.equal(3, totalCount);
 });
 
 test('Tasks can be marked as done within the due date', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
   const name = 'Task #1';
 
-  const user = await User.create({ email, password });
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
   const task = await Task.create({ name, description: '', user_id: user.id });
 
   const date = new Date();
@@ -328,12 +465,8 @@ test('Tasks can be marked as done within the due date', async ({ client }) => {
 });
 
 test('Tasks cannot be marked as done outside the due date', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
-  const name = 'Task #1';
-
-  const user = await User.create({ email, password });
-  const task = await Task.create({ name, description: '', user_id: user.id });
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
+  const task = await Task.create({ name: 'Task #1', description: '', user_id: user.id });
 
   const date = new Date();
   date.setMilliseconds(0);
@@ -362,13 +495,10 @@ test('Tasks cannot be marked as done outside the due date', async ({ client }) =
 });
 
 test('user can edit schedule remarks', async ({ client }) => {
-  const email = 'test@test.com';
-  const password = 'password';
-  const name = 'Task #1';
   const remarks = 'New remark';
 
-  const user = await User.create({ email, password });
-  const task = await Task.create({ name, description: '', user_id: user.id });
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
+  const task = await Task.create({ name: 'Task #1', description: '', user_id: user.id });
 
   const date1 = new Date();
   date1.setHours(12, 0, 0, 0);
@@ -382,7 +512,7 @@ test('user can edit schedule remarks', async ({ client }) => {
   schedule = await TaskSchedule.create(schedule);
 
   const response = await client
-    .put(`api/v1/tasks/update_schedule/${schedule.id}`)
+    .put(`api/v1/tasks/schedules/${schedule.id}`)
     .loginVia(user, 'jwt')
     .field('remarks', remarks)
     .end();

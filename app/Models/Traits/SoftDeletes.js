@@ -1,4 +1,5 @@
 class SoftDelete {
+  /* eslint-disable func-names */
   register(Model, customOptions = {}) {
     const deletedAtColumn = customOptions.name || 'deleted_at';
 

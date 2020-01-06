@@ -192,6 +192,85 @@ class TaskController {
     }
   }
 
+  async archive({ params: { id }, auth: { current: { user } }, response }) {
+    try {
+      const date = new Date();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const dateStr = `${date.getFullYear()}-${month >= 10 ? month : `0${month}`}-${day >= 10 ? day : `0${day}`}`;
+      
+      const task = await Task
+        .query()
+        .where({ id, user_id: user.id })
+        .firstOrFail();
+
+      Logger.info(`Archiving task ${id} from ${dateStr}`);
+
+      await task.delete();
+      await TaskSchedule
+        .query()
+        .where({ task_id: task.id, user_id: user.id, done: false })
+        .where('due_date', '>=', dateStr)
+        .update({ deleted_at: new Date() });
+
+      const data = await Task.query()
+        .where({ id, user_id: user.id })
+        .onlyTrashed()
+        .with('schedules')
+        .firstOrFail();
+
+      return response.status(200).json({ success: true, data });
+    } catch (error) {
+      return response.status(404).json({
+        success: false,
+        message: 'Task not found.'
+      });
+    }
+  }
+
+  async restore({ params: { id }, auth: { current: { user } }, response }) {
+    try {
+      const date = new Date();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const dateStr = `${date.getFullYear()}-${month >= 10 ? month : `0${month}`}-${day >= 10 ? day : `0${day}`}`;
+      
+      const task = await Task
+        .query()
+        .where({ id, user_id: user.id })
+        .withTrashed()
+        .firstOrFail();
+
+      if (!task.deleted_at) { // Task does not need restoration
+        await task.load('schedules');
+
+        return response.status(200).json({ success: true, data: task });
+      }
+
+      Logger.info(`Restoring task ${id} from ${dateStr}`);
+
+      await task.restore();
+      await TaskSchedule
+        .query()
+        .where({ task_id: task.id, user_id: user.id, done: false })
+        .where('due_date', '>=', dateStr)
+        .onlyTrashed()
+        .update({ deleted_at: null });
+
+      const data = await Task.query()
+        .where({ id, user_id: user.id })
+        .with('schedules')
+        .firstOrFail();
+
+      return response.status(200).json({ success: true, data });
+    } catch (error) {
+      return response.status(404).json({
+        success: false,
+        message: 'Task not found.'
+      });
+    }
+  }
+
   async doneToday({ params: { id }, auth: { current: { user } }, response }) {
     try {
       const date = new Date();
