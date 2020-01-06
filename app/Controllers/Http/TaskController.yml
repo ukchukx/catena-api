@@ -22,6 +22,9 @@
       - in: body
         name: description
         type: string
+      - in: body
+        name: visibility
+        type: string
     responses:
       200:
         schema:
@@ -75,6 +78,40 @@
             message:
               type: string
               example: Could not retrieve tasks
+/public/tasks/{id}:
+  get:
+    tags:
+      - task
+    summary: Get public task
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: path
+        name: id
+        type: integer
+    responses:
+      200:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            data:
+              type: array
+              items:
+                $ref: '#/definitions/Task'
+      404:
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: Task not found
 /tasks/{id}:
   get:
     tags:
@@ -127,6 +164,9 @@
         type: string
       - in: body
         name: description
+        type: string
+      - in: body
+        name: visibility
         type: string
     responses:
       200:

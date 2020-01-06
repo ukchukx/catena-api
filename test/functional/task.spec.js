@@ -221,6 +221,39 @@ test('user can list tasks', async ({ client }) => {
   });
 });
 
+test('users can get public tasks without authentication', async ({ client }) => {
+  const email = 'test@test.com';
+  const password = 'password';
+  const name = 'Public';
+
+  const user = await User.create({ email, password });
+  const publicTask = await Task.create({ name, description: '', visibility: 'public', user_id: user.id });
+  const privateTask = await Task.create({ name: 'Private', description: '', visibility: 'private', user_id: user.id });
+
+  let response = await client
+    .get(`api/v1/public/tasks/${publicTask.id}`)
+    .end();
+
+  response.assertStatus(200);
+  response.assertJSONSubset({
+    success: true,
+    data: {
+      name,
+      schedules: []
+    }
+  });
+
+  response = await client
+    .get(`api/v1/public/tasks/${privateTask.id}`)
+    .end();
+
+  response.assertStatus(404);
+  response.assertJSONSubset({
+    success: false,
+    message: 'Task not found'
+  });
+});
+
 test('user can delete tasks', async ({ client }) => {
   const email = 'test@test.com';
   const password = 'password';
@@ -266,13 +299,13 @@ test('Tasks can be marked as done within the due date', async ({ client }) => {
   hours = hours >= 10 ? hours : `0${hours}`;
 
   const schedules = [
-    { 
+    {
       due_date: date.toISOString(),
-      from: `${hours}:00:00`, 
-      to: `${hours}:59:59`, 
-      remarks: 'test schedule #2', 
-      task_id: task.id, 
-      user_id: user.id 
+      from: `${hours}:00:00`,
+      to: `${hours}:59:59`,
+      remarks: 'test schedule #2',
+      task_id: task.id,
+      user_id: user.id
     }
   ];
   await TaskSchedule.createMany(schedules);
@@ -308,13 +341,13 @@ test('Tasks cannot be marked as done outside the due date', async ({ client }) =
   hours = hours >= 10 ? hours : `0${hours}`;
 
   const schedules = [
-    { 
-      due_date: date.toISOString(), 
-      from: `${hours - 1}:00:00`, 
-      to: `${hours - 1}:59:59`, 
-      remarks: 'test schedule #2', 
-      task_id: task.id, 
-      user_id: user.id 
+    {
+      due_date: date.toISOString(),
+      from: `${hours - 1}:00:00`,
+      to: `${hours - 1}:59:59`,
+      remarks: 'test schedule #2',
+      task_id: task.id,
+      user_id: user.id
     }
   ];
   await TaskSchedule.createMany(schedules);

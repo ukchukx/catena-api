@@ -19,6 +19,7 @@ Route.group(() => {
   Route.post('authenticate', 'AuthController.authenticate').as('auth.authenticate')
   Route.post('forgot', 'PasswordResetController.forgot').as('auth.forgot')
   Route.post('reset', 'PasswordResetController.reset').as('auth.reset')
+  Route.get('public/tasks/:id', 'TaskController.getPublic').as('task.get_public')
 }).prefix('api/v1').formats(['json'])
 
 Route.group(() => {

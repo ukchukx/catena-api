@@ -8,16 +8,18 @@ class TaskController {
     // get data from the request and sanitize
     const sanitizationRules = {
       name: 'trim|strip_tags|strip_links',
-      description: 'trim'
+      description: 'trim',
+      visibility: 'trim'
     };
-    const userData = sanitize(request.only(['name', 'description', 'schedules']), sanitizationRules);
-
-    // Validate user input
     const validationRules = {
-      name: 'string|max:255',
+      name: 'string|required|max:255',
       description: 'string',
+      visibility: 'string|required|in:private,public',
       schedules: 'array'
     };
+    const userData = sanitize(request.only(['name', 'description', 'schedules', 'visibility']), sanitizationRules);
+    if (!userData.visibility) userData.visibility = 'private';
+
     const validation = await validate(userData, validationRules);
 
     if (validation.fails()) {
@@ -32,17 +34,18 @@ class TaskController {
       const task = await Task.create({
         name: userData.name,
         description: userData.description || '',
+        visibility: userData.visibility,
         user_id: user.id
       });
 
       if (userData.schedules) { // If schedules were supplied, create them now
         userData.schedules = userData.schedules
           .map(schedule => (
-            { 
-              due_date: schedule.due_date, 
-              from: schedule.from || '00:00:00', 
-              to: schedule.to || '23:59:59', 
-              remarks: schedule.remarks || '', 
+            {
+              due_date: schedule.due_date,
+              from: schedule.from || '00:00:00',
+              to: schedule.to || '23:59:59',
+              remarks: schedule.remarks || '',
               done: false,
               task_id: task.id,
               user_id: user.id
@@ -83,6 +86,26 @@ class TaskController {
     }
   }
 
+  async getPublic({ params: { id }, response }) {
+    try {
+      const data = await Task.query()
+        .where({ id, visibility: 'public' })
+        .with('schedules')
+        .with('user')
+        .firstOrFail();
+
+      return response.json({
+        success: true,
+        data
+      });
+    } catch (error) {
+      return response.status(404).json({
+        success: false,
+        message: 'Task not found'
+      });
+    }
+  }
+
   async list({ auth: { current: { user } }, response }) {
     try {
       const tasks = await Task
@@ -107,16 +130,17 @@ class TaskController {
     // get data from the request and sanitize
     const sanitizationRules = {
       name: 'trim|strip_tags|strip_links',
-      description: 'trim'
+      description: 'trim',
+      visibility: 'trim'
     };
-    const userData = sanitize(request.only(['name', 'description']), sanitizationRules);
-
-    // Validate user input
     const validationRules = {
       name: 'string|max:255',
-      description: 'string'
+      description: 'string',
+      visibility: 'string|in:private,public'
     };
+    const userData = sanitize(request.only(['name', 'description', 'visibility']), sanitizationRules);
     const validation = await validate(userData, validationRules);
+
     if (validation.fails()) {
       return response.status(422).json({
         success: false,
@@ -192,7 +216,7 @@ class TaskController {
         .where('from', '<=', time)
         .where('to', '>=', time)
         .first();
-        
+
       if (!schedule) {
         Logger.info(`No schedule found for task ${id} on ${date}`);
 
