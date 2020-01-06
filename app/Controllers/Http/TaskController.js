@@ -179,6 +179,7 @@ class TaskController {
       const task = await Task
         .query()
         .where({ id, user_id: user.id })
+        .withTrashed()
         .firstOrFail();
 
       await task.forceDelete();
