@@ -2,6 +2,7 @@ const Logger = use('Logger');
 const { validate, sanitize } = use('Validator');
 const Task = use('App/Models/Task');
 const TaskSchedule = use('App/Models/TaskSchedule');
+const Ws = use('Ws');
 
 class TaskController {
   async create({ request, auth: { current: { user } }, response }) {
@@ -55,6 +56,11 @@ class TaskController {
       }
 
       await task.load('schedules');
+
+      const topic = Ws.getChannel('users').topic('users');
+      if (topic) {
+        topic.broadcast('task_created', { task });
+      }
 
       return response.json({ success: true, message: 'Task created.', data: task });
     } catch (error) {
@@ -161,6 +167,11 @@ class TaskController {
       await task.save();
       await task.load('schedules');
 
+      const topic = Ws.getChannel('users').topic('users');
+      if (topic) {
+        topic.broadcast('task_updated', { task });
+      }
+
       return response.json({
         success: true,
         message: 'Task updated.',
@@ -184,6 +195,11 @@ class TaskController {
 
       await task.forceDelete();
 
+      const topic = Ws.getChannel('users').topic('users');
+      if (topic) {
+        topic.broadcast('task_deleted', { task });
+      }
+
       return response.status(204).json({});
     } catch (error) {
       return response.status(400).json({
@@ -199,7 +215,7 @@ class TaskController {
       const month = date.getMonth() + 1;
       const day = date.getDate();
       const dateStr = `${date.getFullYear()}-${month >= 10 ? month : `0${month}`}-${day >= 10 ? day : `0${day}`}`;
-      
+
       const task = await Task
         .query()
         .where({ id, user_id: user.id })
@@ -220,6 +236,11 @@ class TaskController {
         .with('schedules')
         .firstOrFail();
 
+      const topic = Ws.getChannel('users').topic('users');
+      if (topic) {
+        topic.broadcast('task_updated', { task: data });
+      }
+
       return response.status(200).json({ success: true, data });
     } catch (error) {
       return response.status(404).json({
@@ -235,7 +256,7 @@ class TaskController {
       const month = date.getMonth() + 1;
       const day = date.getDate();
       const dateStr = `${date.getFullYear()}-${month >= 10 ? month : `0${month}`}-${day >= 10 ? day : `0${day}`}`;
-      
+
       const task = await Task
         .query()
         .where({ id, user_id: user.id })
@@ -262,6 +283,11 @@ class TaskController {
         .where({ id, user_id: user.id })
         .with('schedules')
         .firstOrFail();
+
+      const topic = Ws.getChannel('users').topic('users');
+      if (topic) {
+        topic.broadcast('task_updated', { task: data });
+      }
 
       return response.status(200).json({ success: true, data });
     } catch (error) {
@@ -317,9 +343,14 @@ class TaskController {
         .with('schedules')
         .firstOrFail();
 
+      const topic = Ws.getChannel('users').topic('users');
+      if (topic) {
+        topic.broadcast('task_updated', { task });
+      }
+
       return response.status(200).json({ success: true, data: task });
     } catch (error) {
-      console.warn(error);
+      // console.warn(error);
       Logger.error(`${error}`);
       return response.status(400).json({
         success: false,
@@ -355,6 +386,11 @@ class TaskController {
       schedule.merge(userData);
 
       await schedule.save();
+
+      const topic = Ws.getChannel('users').topic('users');
+      if (topic) {
+        topic.broadcast('schedule_updated', { schedule });
+      }
 
       return response.json({
         success: true,

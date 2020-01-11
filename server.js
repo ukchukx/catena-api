@@ -19,9 +19,10 @@
 const { execSync } = require('child_process');
 console.log(execSync('node ace migration:run --force', { encoding: 'utf-8' }));
 
-const { Ignitor } = require('@adonisjs/ignitor')
+const { Ignitor } = require('@adonisjs/ignitor');
 
 new Ignitor(require('@adonisjs/fold'))
   .appRoot(__dirname)
+  .wsServer()
   .fireHttpServer()
-  .catch(console.error)
+  .catch(console.error);

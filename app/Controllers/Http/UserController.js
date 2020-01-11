@@ -1,6 +1,7 @@
 const { validate, sanitize } = use('Validator');
 const Hash = use('Hash');
 const User = use('App/Models/User');
+const Ws = use('Ws');
 
 class UserController {
   async getProfile({ auth, response }) {
@@ -54,6 +55,11 @@ class UserController {
       await user.save();
       await user.load('tasks.schedules');
 
+      const topic = Ws.getChannel('users').topic('users');
+      if (topic) {
+        topic.broadcast('user_updated', { user });
+      }
+
       return response.json({
         success: true,
         message: 'Profile updated.',
@@ -86,6 +92,11 @@ class UserController {
     user.password = request.input('new_password');
     await user.save();
     await user.load('tasks.schedules');
+
+    const topic = Ws.getChannel('users').topic('users');
+    if (topic) {
+      topic.broadcast('user_updated', { user });
+    }
 
     return response.json({
       success: true,
