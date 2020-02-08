@@ -1,6 +1,7 @@
 version: '2'
 services:
    catena_api:
+    build: .
     image: catena_api
     container_name: catena_api
     restart: unless-stopped

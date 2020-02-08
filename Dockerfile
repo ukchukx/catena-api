@@ -1,4 +1,4 @@
-FROM node:9-alpine
+FROM node:carbon-alpine
 ENV NODE_ENV=production
 WORKDIR /app
 COPY ./package.json .
