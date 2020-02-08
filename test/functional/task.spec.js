@@ -2,11 +2,11 @@ const { test, trait } = use('Test/Suite')('Task');
 const User = use('App/Models/User');
 const Task = use('App/Models/Task');
 const TaskSchedule = use('App/Models/TaskSchedule');
+const { dateEqualsNoMilliseconds } = require('../../utils/date');
 
 trait('DatabaseTransactions');
 trait('Test/ApiClient');
 trait('Auth/Client');
-
 
 test('User can create tasks', async ({ client }) => {
   const name = 'Task #1';
@@ -135,6 +135,159 @@ test('user can update tasks', async ({ client }) => {
       description
     }
   });
+});
+
+test("user can update task schedules, including today's undone schedule", async ({ assert, client }) => {
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
+  const task = await Task.create({ name: 'Task #1', description: '', user_id: user.id });
+  const today = new Date();
+  const tomorrow = new Date(today.getTime() + 86400000);
+  const yesterday = new Date(today.getTime() - 86400000);
+
+  await TaskSchedule.createMany([
+    {
+      due_date: yesterday.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    },
+    {
+      due_date: today.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    },
+    {
+      due_date: tomorrow.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    }
+  ]);
+  const schedulesArgs = [
+    {
+      due_date: today.toISOString(),
+      from: '12:00:00',
+      to: '18:00:00',
+      task_id: task.id,
+      user_id: user.id
+    },
+    {
+      due_date: tomorrow.toISOString(),
+      from: '12:00:00',
+      to: '18:00:00',
+      task_id: task.id,
+      user_id: user.id
+    }
+  ];
+
+  const response = await client
+    .put(`api/v1/tasks/${task.id}`)
+    .loginVia(user, 'jwt')
+    .send({ schedules: schedulesArgs })
+    .end();
+
+  response.assertStatus(200);
+  response.assertJSONSubset({
+    success: true,
+    message: 'Task updated.',
+    data: {
+      schedules: [
+        { done: 0, from: '00:00:00', to: '23:59:59', remarks: '' },
+        { done: 0, from: '12:00:00', to: '18:00:00', remarks: '' },
+        { done: 0, from: '12:00:00', to: '18:00:00', remarks: '' }
+      ]
+    }
+  });
+
+  const { body: { data: { schedules } } } = response;
+
+  assert.isTrue(dateEqualsNoMilliseconds(new Date(schedules[0].due_date), yesterday));
+  assert.isTrue(dateEqualsNoMilliseconds(new Date(schedules[1].due_date), today));
+  assert.isTrue(dateEqualsNoMilliseconds(new Date(schedules[2].due_date), tomorrow));
+});
+
+test("user can update task schedules, excluding today's done schedule", async ({ assert, client }) => {
+  const user = await User.create({ email: 'test@test.com', password: 'password' });
+  const task = await Task.create({ name: 'Task #1', description: '', user_id: user.id });
+  const today = new Date();
+  const tomorrow = new Date(today.getTime() + 86400000);
+  const yesterday = new Date(today.getTime() - 86400000);
+
+  await TaskSchedule.createMany([
+    {
+      due_date: yesterday.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    },
+    {
+      due_date: today.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id,
+      done: true
+    },
+    {
+      due_date: tomorrow.toISOString(),
+      from: '00:00:00',
+      to: '23:59:59',
+      remarks: '',
+      task_id: task.id,
+      user_id: user.id
+    }
+  ]);
+  const schedulesArgs = [
+    {
+      due_date: today.toISOString(),
+      from: '12:00:00',
+      to: '18:00:00',
+      task_id: task.id,
+      user_id: user.id
+    },
+    {
+      due_date: tomorrow.toISOString(),
+      from: '12:00:00',
+      to: '18:00:00',
+      task_id: task.id,
+      user_id: user.id
+    }
+  ];
+
+  const response = await client
+    .put(`api/v1/tasks/${task.id}`)
+    .loginVia(user, 'jwt')
+    .send({ schedules: schedulesArgs })
+    .end();
+
+  response.assertStatus(200);
+  response.assertJSONSubset({
+    success: true,
+    message: 'Task updated.',
+    data: {
+      schedules: [
+        { done: 0, from: '00:00:00', to: '23:59:59', remarks: '' },
+        { done: 1, from: '00:00:00', to: '23:59:59', remarks: '' },
+        { done: 0, from: '12:00:00', to: '18:00:00', remarks: '' }
+      ]
+    }
+  });
+
+  const { body: { data: { schedules } } } = response;
+
+  assert.isTrue(dateEqualsNoMilliseconds(new Date(schedules[0].due_date), yesterday));
+  assert.isTrue(dateEqualsNoMilliseconds(new Date(schedules[1].due_date), today));
+  assert.isTrue(dateEqualsNoMilliseconds(new Date(schedules[2].due_date), tomorrow));
 });
 
 test('user can get tasks', async ({ client }) => {

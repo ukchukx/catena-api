@@ -23,6 +23,7 @@ module.exports = {
     'no-trailing-spaces': 'off',
     'import/prefer-default-export': 'off',
     'linebreak-style': 'off',
+    'implicit-arrow-linebreak': 'off',
     'no-continue': 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 2 : 0
   },

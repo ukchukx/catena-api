@@ -160,6 +160,11 @@
       - token: []
     parameters:
       - in: body
+        name: schedules
+        type: array
+        schema:
+          $ref: '#/definitions/Schedule'
+      - in: body
         name: name
         type: string
       - in: body

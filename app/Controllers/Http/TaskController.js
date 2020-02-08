@@ -1,8 +1,10 @@
+
 const Logger = use('Logger');
+const Ws = use('Ws');
 const { validate, sanitize } = use('Validator');
 const Task = use('App/Models/Task');
 const TaskSchedule = use('App/Models/TaskSchedule');
-const Ws = use('Ws');
+const { dateEqualsNoTime } = require('../../../utils/date');
 
 class TaskController {
   async create({ request, auth: { current: { user } }, response }) {
@@ -142,12 +144,15 @@ class TaskController {
     const validationRules = {
       name: 'string|max:255',
       description: 'string',
-      visibility: 'string|in:private,public'
+      visibility: 'string|in:private,public',
+      schedules: 'array'
     };
-    const userData = sanitize(request.only(['name', 'description', 'visibility']), sanitizationRules);
-    const validation = await validate(userData, validationRules);
+    const taskData = sanitize(request.only(['name', 'description', 'visibility']), sanitizationRules);
+    const validation = await validate(taskData, validationRules);
+    const scheduleValidation = await validate(request.only(['schedules']), validationRules);
+    let newSchedules = request.only(['schedules']).schedules || [];
 
-    if (validation.fails()) {
+    if (validation.fails() || scheduleValidation.fails()) {
       return response.status(422).json({
         success: false,
         message: 'Validation failed',
@@ -162,9 +167,58 @@ class TaskController {
         .firstOrFail();
 
       // Update task fields with provided values
-      task.merge(userData);
+      task.merge(taskData);
 
       await task.save();
+
+      if (newSchedules.length) {
+        newSchedules = newSchedules
+          .map(schedule => (
+            {
+              due_date: schedule.due_date,
+              from: schedule.from || '00:00:00',
+              to: schedule.to || '23:59:59',
+              remarks: schedule.remarks || '',
+              done: false,
+              task_id: task.id,
+              user_id: user.id
+            }));
+
+        const date = new Date();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        const dateStr = `${date.getFullYear()}-${month >= 10 ? month : `0${month}`}-${day >= 10 ? day : `0${day}`}`;
+  
+        Logger.info(`Deleting undone schedules from ${dateStr} for task ${id}`);
+
+        // Remove today's schedule if not done
+        const todaySchedule = await TaskSchedule
+          .query()
+          .where({ task_id: id, user_id: user.id })
+          .where('due_date', 'like', `${dateStr}%`)
+          .first();
+
+        if (todaySchedule) {
+          if (!todaySchedule.done) {
+            Logger.info(`Deleting undone schedule for today ${dateStr} for task ${id}`);
+  
+            todaySchedule.forceDelete();
+          } else {
+            // Remove today from `newSchedules` since it's done
+            newSchedules = newSchedules.filter(({ due_date }) => !dateEqualsNoTime(new Date(due_date), date));
+          }
+        }
+
+  
+        await TaskSchedule
+          .query()
+          .where({ task_id: id, user_id: user.id, done: false })
+          .where('due_date', '>=', dateStr)
+          .delete();
+
+        await TaskSchedule.createMany(newSchedules);
+      }
+
       await task.load('schedules');
 
       const topic = Ws.getChannel('users').topic('users');
@@ -178,6 +232,7 @@ class TaskController {
         data: task
       });
     } catch (error) {
+      console.log(error);
       return response.status(400).json({
         success: false,
         message: 'There was a problem updating task, please try again later.'
