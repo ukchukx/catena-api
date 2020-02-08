@@ -4,6 +4,7 @@
 !database/
 !public/
 !start/
+!utils/
 !.env
 !server.js
 !ace
