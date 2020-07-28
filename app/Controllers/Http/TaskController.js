@@ -4,7 +4,7 @@ const Ws = use('Ws');
 const { validate, sanitize } = use('Validator');
 const Task = use('App/Models/Task');
 const TaskSchedule = use('App/Models/TaskSchedule');
-const { dateEqualsNoTime } = require('../../../utils/date');
+const { dateEqualsNoTime, utcNow, twelveUTC, timeAsInt } = require('../../../utils/date');
 
 class TaskController {
   async create({ request, auth: { current: { user } }, response }) {
@@ -188,7 +188,7 @@ class TaskController {
         const month = date.getMonth() + 1;
         const day = date.getDate();
         const dateStr = `${date.getFullYear()}-${month >= 10 ? month : `0${month}`}-${day >= 10 ? day : `0${day}`}`;
-  
+
         Logger.info(`Deleting undone schedules from ${dateStr} for task ${id}`);
 
         // Remove today's schedule if not done
@@ -201,7 +201,7 @@ class TaskController {
         if (todaySchedule) {
           if (!todaySchedule.done) {
             Logger.info(`Deleting undone schedule for today ${dateStr} for task ${id}`);
-  
+
             todaySchedule.forceDelete();
           } else {
             // Remove today from `newSchedules` since it's done
@@ -209,7 +209,6 @@ class TaskController {
           }
         }
 
-  
         await TaskSchedule
           .query()
           .where({ task_id: id, user_id: user.id, done: false })
@@ -232,7 +231,8 @@ class TaskController {
         data: task
       });
     } catch (error) {
-      console.log(error);
+      error = error.toString();
+      Logger.warning(`Error updating task ${id} for ${user.email}`, { email: user.email, error, id });
       return response.status(400).json({
         success: false,
         message: 'There was a problem updating task, please try again later.'
@@ -353,35 +353,28 @@ class TaskController {
     }
   }
 
-  async doneToday({ params: { id }, auth: { current: { user } }, response }) {
-    try {
-      const date = new Date();
-      let month = date.getMonth() + 1;
-      month = month >= 10 ? month : `0${month}`;
-      const day = date.getDate() >= 10 ? date.getDate() : `0${date.getDate()}`;
-      const dateStr = `${date.getFullYear()}-${month}-${day}%`;
-      let hours = date.getHours();
-      hours = hours >= 10 ? hours : `0${hours}`;
-      let minutes = date.getMinutes();
-      minutes = minutes >= 10 ? minutes : `0${minutes}`;
-      let seconds = date.getMinutes();
-      seconds = seconds >= 10 ? seconds : `0${seconds}`;
-      const time = parseInt(`${hours}${minutes}${seconds}`, 10);
+  async doneToday({ params: { id }, auth: { current: { user } }, request, response }) {
+    const time = timeAsInt();
+    const now = new Date();
+    const midday = twelveUTC();
 
-      Logger.info(`Attempting to mark task ${id} on ${date}`);
+    const logData = { id, user: user.email, now, midday, time };
+
+    try {
+      Logger.info(`Attempting to mark task ${id} on ${now} for ${user.email}`, logData);
 
       const schedule = await TaskSchedule
         .query()
         .where({ task_id: id, user_id: user.id, done: false })
-        .where('due_date', 'like', dateStr)
+        .where('due_date', '=', midday)
         .where('from', '<=', time)
         .where('to', '>=', time)
         .first();
 
       if (!schedule) {
-        Logger.info(`No schedule found for task ${id} on ${date}`);
+        Logger.info(`No schedule found for task ${id} on ${now} for ${user.email}`, logData);
 
-        return response.status(401).json({
+        return response.status(400).json({
           success: false,
           message: 'Schedules can only be marked on their due date.'
         });
@@ -391,7 +384,7 @@ class TaskController {
       schedule.done = true;
       await schedule.save();
 
-      Logger.info(`Task ${id} on ${date} marked.`);
+      Logger.info(`Task ${id} on ${now} marked for ${user.email}.`, logData);
 
       const task = await Task.query()
         .where({ id, user_id: user.id })
@@ -405,8 +398,7 @@ class TaskController {
 
       return response.status(200).json({ success: true, data: task });
     } catch (error) {
-      // console.warn(error);
-      Logger.error(`${error}`);
+      Logger.error(`Could not mark task ${id} on ${now} due to: ${error}`, logData);
       return response.status(400).json({
         success: false,
         message: 'There was a problem marking task, please try again later.'

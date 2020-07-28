@@ -584,9 +584,9 @@ test('Tasks can be marked as done within the due date', async ({ client }) => {
   const task = await Task.create({ name, description: '', user_id: user.id });
 
   const date = new Date();
-  date.setMilliseconds(0);
   let hours = date.getHours();
   hours = hours >= 10 ? hours : `0${hours}`;
+  date.setUTCHours(12, 0, 0, 0);
 
   const schedules = [
     {
@@ -622,8 +622,8 @@ test('Tasks cannot be marked as done outside the due date', async ({ client }) =
   const task = await Task.create({ name: 'Task #1', description: '', user_id: user.id });
 
   const date = new Date();
-  date.setMilliseconds(0);
-  let hours = date.getHours();
+  date.setUTCHours(12, 0, 0, 0);
+  let hours = date.getUTCHours();
   hours = hours >= 10 ? hours : `0${hours}`;
 
   const schedules = [
@@ -643,7 +643,7 @@ test('Tasks cannot be marked as done outside the due date', async ({ client }) =
     .loginVia(user, 'jwt')
     .end();
 
-  response.assertStatus(401);
+  response.assertStatus(400);
   response.assertJSONSubset({ success: false });
 });
 
@@ -654,7 +654,7 @@ test('user can edit schedule remarks', async ({ client }) => {
   const task = await Task.create({ name: 'Task #1', description: '', user_id: user.id });
 
   const date1 = new Date();
-  date1.setHours(12, 0, 0, 0);
+  date1.setUTCHours(12, 0, 0, 0);
 
   let schedule = {
     due_date: date1,
